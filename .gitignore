@@ -1,0 +1,12 @@
+# Secrets — never commit your Gemini API key
+config.js
+.env
+*.key
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Dependencies (if we add any tooling later)
+node_modules/
