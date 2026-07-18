@@ -137,13 +137,13 @@ function buildGroupElement(category, tabs) {
     const slug = categoryToSlug(category);
 
     const group = document.createElement("div");
-    group.className = "group";
+    group.className = "group collapsed";
 
     const header = document.createElement("div");
     header.className = "group-header";
     header.tabIndex = 0;
     header.setAttribute("role", "button");
-    header.setAttribute("aria-expanded", "true");
+    header.setAttribute("aria-expanded", "false");
 
     const dot = document.createElement("span");
     dot.className = "dot";
