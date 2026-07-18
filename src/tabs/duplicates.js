@@ -8,7 +8,7 @@
  * @param {string} url
  * @returns {string} normalized URL, or the original string if it doesn't parse
  */
-function normalizeUrl(url) {
+export function normalizeUrl(url) {
     try {
         const parsed = new URL(url);
         parsed.hash = "";

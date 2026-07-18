@@ -138,6 +138,13 @@ const KEYWORD_RULES = [
 
 const DEFAULT_CATEGORY = "Other";
 
+// Shared source of truth for valid category names -- both the rule engine
+// and the Gemini prompt (Step 6) use this list, so they never disagree.
+export const CATEGORIES = [
+    ...new Set(DOMAIN_RULES.map((rule) => rule.category)),
+    DEFAULT_CATEGORY,
+];
+
 /**
  * Categorizes a single tab: domain rules -> TLD check -> keyword fallback -> "Other".
  * @param {chrome.tabs.Tab} tab

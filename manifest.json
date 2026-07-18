@@ -3,18 +3,18 @@
   "name": "ClaroTab",
   "version": "0.1.0",
   "description": "Automatically groups, cleans up, and helps you restore your browser tabs.",
-
   "permissions": [
     "tabs",
     "tabGroups",
     "storage"
   ],
-
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*"
+  ],
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "ClaroTab"
   },
-
   "background": {
     "service_worker": "background.js"
   }

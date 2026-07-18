@@ -1,18 +1,104 @@
 // This file runs whenever the user clicks the extension icon and popup.html opens.
 
 import { getAllTabs } from "../src/tabs/query.js";
-import { groupTabsByCategory } from "../src/categorize/rules.js";
+import { groupTabsByCategory, categorizeTab } from "../src/categorize/rules.js";
 import { countClosableDuplicates, closeDuplicateTabs } from "../src/tabs/duplicates.js";
+import { normalizeUrl } from "../src/tabs/duplicates.js";
+import { categorizeTabsWithGemini } from "../src/categorize/gemini.js";
+import { getCachedCategory, setCachedCategories } from "../src/categorize/cache.js";
+import { GEMINI_API_KEY } from "../config.js";
 
 async function init() {
     const tabs = await getAllTabs();
     const groups = groupTabsByCategory(tabs);
 
     console.log("Tabs found:", tabs);
-    console.log("Grouped:", groups);
+    console.log("Grouped (rules only):", groups);
 
+    // Render immediately with rule-based results -- the popup should never
+    // feel like it's waiting on the network for its first paint.
     renderGroups(tabs.length, groups);
     renderDuplicateAction(tabs);
+
+    await refineWithAI(tabs, groups);
+}
+
+// Looks at tabs the rule engine couldn't confidently place ("Other"),
+// checks the cache first, and only calls Gemini for the ones still unknown.
+// Re-renders the popup once refined results are in.
+async function refineWithAI(tabs, groups) {
+    const otherTabs = groups["Other"] || [];
+    if (otherTabs.length === 0) {
+        return; // nothing ambiguous -- rules handled everything
+    }
+
+    const isConfigured = GEMINI_API_KEY && GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE";
+    if (!isConfigured) {
+        console.log("ClaroTab: no Gemini API key configured -- skipping AI refinement.");
+        return;
+    }
+
+    showRefiningIndicator();
+
+    const overrides = {}; // tab.id -> category
+    const uncachedTabs = [];
+
+    for (const tab of otherTabs) {
+        const cached = await getCachedCategory(normalizeUrl(tab.url));
+        if (cached) {
+            overrides[tab.id] = cached;
+        } else {
+            uncachedTabs.push(tab);
+        }
+    }
+
+    if (uncachedTabs.length > 0) {
+        const aiResults = await categorizeTabsWithGemini(uncachedTabs, GEMINI_API_KEY);
+        const newCacheEntries = {};
+
+        for (const tab of uncachedTabs) {
+            const category = aiResults[tab.id];
+            if (category) {
+                overrides[tab.id] = category;
+                newCacheEntries[normalizeUrl(tab.url)] = category;
+            }
+        }
+
+        if (Object.keys(newCacheEntries).length > 0) {
+            await setCachedCategories(newCacheEntries);
+        }
+    }
+
+    if (Object.keys(overrides).length === 0) {
+        // Nothing new to apply (cache had nothing, API failed, or found nothing
+        // confident) -- still re-render to clear the "Refining..." status text.
+        renderGroups(tabs.length, groups);
+        return;
+    }
+
+    const refinedGroups = applyOverrides(tabs, overrides);
+    console.log("Grouped (refined with AI):", refinedGroups);
+    renderGroups(tabs.length, refinedGroups);
+    renderDuplicateAction(tabs);
+}
+
+// Rebuilds the full grouping, using an AI-assigned category where we have
+// one, falling back to the normal rule engine otherwise.
+function applyOverrides(tabs, overrides) {
+    const groups = {};
+    for (const tab of tabs) {
+        const category = overrides[tab.id] || categorizeTab(tab);
+        if (!groups[category]) {
+            groups[category] = [];
+        }
+        groups[category].push(tab);
+    }
+    return groups;
+}
+
+function showRefiningIndicator() {
+    const status = document.getElementById("status");
+    status.textContent += " · Refining with AI…";
 }
 
 // Turns "Work & Productivity" into "work-productivity" so it can be used
@@ -147,8 +233,6 @@ function renderDuplicateAction(tabs) {
     actionBar.classList.remove("hidden");
     button.textContent = `Close ${duplicateCount} duplicate${duplicateCount === 1 ? "" : "s"}`;
 
-    // Replace the button to clear any previously attached listener
-    // (avoids stacking multiple handlers if renderDuplicateAction runs again).
     const freshButton = button.cloneNode(true);
     button.replaceWith(freshButton);
 
@@ -156,7 +240,7 @@ function renderDuplicateAction(tabs) {
         freshButton.disabled = true;
         freshButton.textContent = "Closing…";
         await closeDuplicateTabs(tabs);
-        await init(); // refresh the whole popup with the updated tab list
+        await init();
     });
 }
 
