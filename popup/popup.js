@@ -2,6 +2,7 @@
 
 import { getAllTabs } from "../src/tabs/query.js";
 import { groupTabsByCategory } from "../src/categorize/rules.js";
+import { countClosableDuplicates, closeDuplicateTabs } from "../src/tabs/duplicates.js";
 
 async function init() {
     const tabs = await getAllTabs();
@@ -11,6 +12,7 @@ async function init() {
     console.log("Grouped:", groups);
 
     renderGroups(tabs.length, groups);
+    renderDuplicateAction(tabs);
 }
 
 // Turns "Work & Productivity" into "work-productivity" so it can be used
@@ -51,7 +53,6 @@ function buildGroupElement(category, tabs) {
     const group = document.createElement("div");
     group.className = "group";
 
-    // --- Header row: dot, name, count, chevron. Clicking it toggles collapse. ---
     const header = document.createElement("div");
     header.className = "group-header";
     header.tabIndex = 0;
@@ -88,7 +89,6 @@ function buildGroupElement(category, tabs) {
         }
     });
 
-    // --- Tab list ---
     const list = document.createElement("ul");
     list.className = "tab-list";
 
@@ -107,8 +107,6 @@ function buildTabElement(tab) {
 
     const favicon = document.createElement("img");
     favicon.className = "tab-favicon";
-    // Fall back to a blank swatch if the tab has no favicon or it fails to load,
-    // rather than showing a broken image icon.
     favicon.src = tab.favIconUrl || "";
     favicon.addEventListener("error", () => {
         favicon.style.background = "var(--border)";
@@ -131,6 +129,35 @@ function buildTabElement(tab) {
     });
 
     return item;
+}
+
+// Shows/hides the "Close duplicates" button based on whether any exist,
+// and wires up the click handler to actually close them and refresh the view.
+function renderDuplicateAction(tabs) {
+    const actionBar = document.getElementById("action-bar");
+    const button = document.getElementById("close-duplicates-btn");
+
+    const duplicateCount = countClosableDuplicates(tabs);
+
+    if (duplicateCount === 0) {
+        actionBar.classList.add("hidden");
+        return;
+    }
+
+    actionBar.classList.remove("hidden");
+    button.textContent = `Close ${duplicateCount} duplicate${duplicateCount === 1 ? "" : "s"}`;
+
+    // Replace the button to clear any previously attached listener
+    // (avoids stacking multiple handlers if renderDuplicateAction runs again).
+    const freshButton = button.cloneNode(true);
+    button.replaceWith(freshButton);
+
+    freshButton.addEventListener("click", async () => {
+        freshButton.disabled = true;
+        freshButton.textContent = "Closing…";
+        await closeDuplicateTabs(tabs);
+        await init(); // refresh the whole popup with the updated tab list
+    });
 }
 
 init();
