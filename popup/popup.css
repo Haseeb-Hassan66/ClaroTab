@@ -1,5 +1,5 @@
 body {
-  width: 320px;
+  width: 340px;
   font-family: system-ui, sans-serif;
   padding: 12px;
 }
@@ -12,22 +12,44 @@ h1 {
 #status {
   font-size: 12px;
   color: #555;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
-#tab-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 300px;
+#groups {
+  max-height: 400px;
   overflow-y: auto;
 }
 
-#tab-list li {
-  font-size: 13px;
-  padding: 6px 4px;
+.group {
+  margin-bottom: 10px;
+}
+
+.group h2 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #888;
+  margin: 0 0 4px 0;
   border-bottom: 1px solid #eee;
+  padding-bottom: 3px;
+}
+
+.group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.group li {
+  font-size: 13px;
+  padding: 5px 4px;
+  border-radius: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.group li:hover {
+  background: #f0f0f0;
 }
