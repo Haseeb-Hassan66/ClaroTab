@@ -16,11 +16,27 @@
     <p id="status">Loading tabs…</p>
   </header>
 
-  <div id="action-bar" class="hidden">
-    <button id="close-duplicates-btn"></button>
+  <nav id="tabs-nav">
+    <button class="nav-btn active" data-view="tabs">Tabs</button>
+    <button class="nav-btn" data-view="sessions">Sessions</button>
+  </nav>
+
+  <div id="tabs-view">
+    <div id="action-bar" class="hidden">
+      <button id="close-duplicates-btn"></button>
+    </div>
+
+    <div id="groups"></div>
   </div>
 
-  <div id="groups"></div>
+  <div id="sessions-view" class="hidden">
+    <div id="save-session-bar">
+      <input id="session-name-input" type="text" placeholder="Name this session…" maxlength="60">
+      <button id="save-session-btn">Save</button>
+    </div>
+
+    <div id="session-list"></div>
+  </div>
 
   <script type="module" src="popup.js"></script>
 </body>

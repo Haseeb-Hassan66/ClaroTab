@@ -7,9 +7,15 @@ import { normalizeUrl } from "../src/tabs/duplicates.js";
 import { categorizeTabsWithGemini } from "../src/categorize/gemini.js";
 import { getCachedCategory, setCachedCategories } from "../src/categorize/cache.js";
 import { GEMINI_API_KEY } from "../config.js";
+import { getSessions, saveSession, deleteSession, restoreSession } from "../src/sessions/storage.js";
+
+// Kept up to date every time init() runs, so the "Save session" button
+// always has the current tab list without needing to re-query.
+let currentTabs = [];
 
 async function init() {
     const tabs = await getAllTabs();
+    currentTabs = tabs;
     const groups = groupTabsByCategory(tabs);
 
     console.log("Tabs found:", tabs);
@@ -244,4 +250,119 @@ function renderDuplicateAction(tabs) {
     });
 }
 
+// --- Sessions ---
+
+// Switches between the "Tabs" and "Sessions" views using the nav buttons.
+// Only one view is visible at a time; the inactive one gets the "hidden" class.
+function setupNav() {
+    const buttons = document.querySelectorAll(".nav-btn");
+    const tabsView = document.getElementById("tabs-view");
+    const sessionsView = document.getElementById("sessions-view");
+
+    buttons.forEach((button) => {
+        button.addEventListener("click", () => {
+            buttons.forEach((b) => b.classList.remove("active"));
+            button.classList.add("active");
+
+            const view = button.dataset.view;
+            tabsView.classList.toggle("hidden", view !== "tabs");
+            sessionsView.classList.toggle("hidden", view !== "sessions");
+
+            if (view === "sessions") {
+                renderSessions();
+            }
+        });
+    });
+}
+
+// Wires the "Save" button: reads the name input, saves the currently open
+// tabs as a new session, clears the input, and refreshes the list.
+function setupSaveSession() {
+    const input = document.getElementById("session-name-input");
+    const button = document.getElementById("save-session-btn");
+
+    button.addEventListener("click", async () => {
+        if (currentTabs.length === 0) return;
+
+        button.disabled = true;
+        await saveSession(input.value, currentTabs);
+        input.value = "";
+        button.disabled = false;
+
+        await renderSessions();
+    });
+
+    // Also allow pressing Enter in the input field to save.
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") button.click();
+    });
+}
+
+async function renderSessions() {
+    const container = document.getElementById("session-list");
+    const sessions = await getSessions();
+
+    container.innerHTML = "";
+
+    if (sessions.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "No saved sessions yet. Save your current tabs to restore them later.";
+        container.appendChild(empty);
+        return;
+    }
+
+    for (const session of sessions) {
+        container.appendChild(buildSessionElement(session));
+    }
+}
+
+function buildSessionElement(session) {
+    const item = document.createElement("div");
+    item.className = "session-item";
+
+    const info = document.createElement("div");
+    info.className = "session-info";
+
+    const name = document.createElement("div");
+    name.className = "session-name";
+    name.textContent = session.name;
+
+    const meta = document.createElement("div");
+    meta.className = "session-meta";
+    const tabCount = session.tabs.length;
+    meta.textContent = `${tabCount} tab${tabCount === 1 ? "" : "s"} · ${new Date(session.createdAt).toLocaleDateString()}`;
+
+    info.append(name, meta);
+
+    const actions = document.createElement("div");
+    actions.className = "session-actions";
+
+    const restoreBtn = document.createElement("button");
+    restoreBtn.className = "session-btn";
+    restoreBtn.textContent = "Restore";
+    restoreBtn.addEventListener("click", async () => {
+        restoreBtn.disabled = true;
+        restoreBtn.textContent = "Opening…";
+        await restoreSession(session);
+        restoreBtn.disabled = false;
+        restoreBtn.textContent = "Restore";
+    });
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "session-btn session-btn-delete";
+    deleteBtn.textContent = "Delete";
+    deleteBtn.addEventListener("click", async () => {
+        await deleteSession(session.id);
+        await renderSessions();
+    });
+
+    actions.append(restoreBtn, deleteBtn);
+    item.append(info, actions);
+
+    return item;
+}
+
+setupNav();
+setupSaveSession();
 init();

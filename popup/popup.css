@@ -85,6 +85,146 @@ h1 {
   padding: 8px 10px 12px;
 }
 
+/* --- Nav bar (switches between Tabs / Sessions views) --- */
+
+#tabs-nav {
+  display: flex;
+  gap: 4px;
+  padding: 10px 16px 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-btn {
+  flex: 1;
+  padding: 7px 0 9px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.nav-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.hidden {
+  display: none;
+}
+
+/* --- Sessions view --- */
+
+#save-session-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 16px;
+}
+
+#session-name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12.5px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+#session-name-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+#save-session-btn {
+  padding: 7px 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#save-session-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#session-list {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 0 10px 12px;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--radius);
+  margin-bottom: 4px;
+}
+
+.session-item:hover {
+  background: var(--surface);
+}
+
+.session-info {
+  min-width: 0;
+}
+
+.session-name {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-meta {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 1px;
+}
+
+.session-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.session-btn {
+  padding: 5px 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: none;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.session-btn-delete {
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.session-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 #action-bar {
   padding: 10px 16px 0;
 }
