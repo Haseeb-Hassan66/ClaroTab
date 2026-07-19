@@ -14,19 +14,42 @@ import { getSessions, saveSession, deleteSession, restoreSession } from "../src/
 let currentTabs = [];
 
 async function init() {
-    const tabs = await getAllTabs();
-    currentTabs = tabs;
-    const groups = groupTabsByCategory(tabs);
+    try {
+        const tabs = await getAllTabs();
+        currentTabs = tabs;
+        const groups = groupTabsByCategory(tabs);
 
-    console.log("Tabs found:", tabs);
-    console.log("Grouped (rules only):", groups);
+        console.log("Tabs found:", tabs);
+        console.log("Grouped (rules only):", groups);
 
-    // Render immediately with rule-based results -- the popup should never
-    // feel like it's waiting on the network for its first paint.
-    renderGroups(tabs.length, groups);
-    renderDuplicateAction(tabs);
+        // Render immediately with rule-based results -- the popup should never
+        // feel like it's waiting on the network for its first paint.
+        renderGroups(tabs.length, groups);
+        renderDuplicateAction(tabs);
 
-    await refineWithAI(tabs, groups);
+        // AI refinement is a bonus layer -- if it throws for any reason we
+        // haven't already anticipated, it must never take down the whole popup.
+        try {
+            await refineWithAI(tabs, groups);
+        } catch (err) {
+            console.warn("ClaroTab: AI refinement step failed unexpectedly:", err);
+        }
+    } catch (err) {
+        console.error("ClaroTab: failed to load tabs:", err);
+        renderErrorState();
+    }
+}
+
+function renderErrorState() {
+    const status = document.getElementById("status");
+    const container = document.getElementById("groups");
+    status.textContent = "Something went wrong.";
+    container.innerHTML = "";
+
+    const error = document.createElement("div");
+    error.className = "empty-state";
+    error.textContent = "Couldn't load your tabs. Try closing and reopening the popup.";
+    container.appendChild(error);
 }
 
 // Looks at tabs the rule engine couldn't confidently place ("Other"),
@@ -208,6 +231,7 @@ function buildTabElement(tab) {
     const title = document.createElement("span");
     title.className = "tab-title";
     title.textContent = tab.title || tab.url;
+    item.title = tab.url;
 
     item.append(favicon, title);
 
@@ -285,11 +309,19 @@ function setupSaveSession() {
         if (currentTabs.length === 0) return;
 
         button.disabled = true;
-        await saveSession(input.value, currentTabs);
-        input.value = "";
+        button.textContent = "Saving…";
+        try {
+            await saveSession(input.value, currentTabs);
+            input.value = "";
+            await renderSessions();
+        } catch (err) {
+            console.error("ClaroTab: failed to save session:", err);
+            button.textContent = "Failed — try again";
+            button.disabled = false;
+            return;
+        }
+        button.textContent = "Save";
         button.disabled = false;
-
-        await renderSessions();
     });
 
     // Also allow pressing Enter in the input field to save.
@@ -300,9 +332,19 @@ function setupSaveSession() {
 
 async function renderSessions() {
     const container = document.getElementById("session-list");
-    const sessions = await getSessions();
-
     container.innerHTML = "";
+
+    let sessions;
+    try {
+        sessions = await getSessions();
+    } catch (err) {
+        console.error("ClaroTab: failed to load sessions:", err);
+        const error = document.createElement("div");
+        error.className = "empty-state";
+        error.textContent = "Couldn't load saved sessions. Try reopening the popup.";
+        container.appendChild(error);
+        return;
+    }
 
     if (sessions.length === 0) {
         const empty = document.createElement("div");
@@ -344,15 +386,23 @@ function buildSessionElement(session) {
     restoreBtn.addEventListener("click", async () => {
         restoreBtn.disabled = true;
         restoreBtn.textContent = "Opening…";
-        await restoreSession(session);
+        try {
+            await restoreSession(session);
+            restoreBtn.textContent = "Restore";
+        } catch (err) {
+            console.error("ClaroTab: failed to restore session:", err);
+            restoreBtn.textContent = "Failed — retry?";
+        }
         restoreBtn.disabled = false;
-        restoreBtn.textContent = "Restore";
     });
 
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "session-btn session-btn-delete";
     deleteBtn.textContent = "Delete";
     deleteBtn.addEventListener("click", async () => {
+        const confirmed = confirm(`Delete "${session.name}"? This can't be undone.`);
+        if (!confirmed) return;
+
         await deleteSession(session.id);
         await renderSessions();
     });
