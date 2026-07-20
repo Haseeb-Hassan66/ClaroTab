@@ -8,12 +8,16 @@ import { categorizeTabsWithGemini } from "../src/categorize/gemini.js";
 import { getCachedCategory, setCachedCategories } from "../src/categorize/cache.js";
 import { GEMINI_API_KEY } from "../config.js";
 import { getSessions, saveSession, deleteSession, restoreSession } from "../src/sessions/storage.js";
+import { getCategoryIcon, UI_ICONS } from "../src/categorize/icons.js";
 
 // Kept up to date every time init() runs, so the "Save session" button
 // always has the current tab list without needing to re-query.
 let currentTabs = [];
 
 async function init() {
+    const brandMark = document.querySelector(".brand-mark");
+    brandMark.classList.add("loading");
+
     try {
         const tabs = await getAllTabs();
         currentTabs = tabs;
@@ -37,6 +41,8 @@ async function init() {
     } catch (err) {
         console.error("ClaroTab: failed to load tabs:", err);
         renderErrorState();
+    } finally {
+        brandMark.classList.remove("loading");
     }
 }
 
@@ -45,11 +51,25 @@ function renderErrorState() {
     const container = document.getElementById("groups");
     status.textContent = "Something went wrong.";
     container.innerHTML = "";
+    container.appendChild(
+        buildEmptyState(UI_ICONS.alert, "Couldn't load your tabs. Try closing and reopening the popup.")
+    );
+}
 
-    const error = document.createElement("div");
-    error.className = "empty-state";
-    error.textContent = "Couldn't load your tabs. Try closing and reopening the popup.";
-    container.appendChild(error);
+// Shared builder for every "nothing to show" state, so they all look consistent.
+function buildEmptyState(iconSvg, message) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "empty-state";
+
+    const icon = document.createElement("div");
+    icon.innerHTML = iconSvg;
+
+    const text = document.createElement("p");
+    text.style.margin = "0";
+    text.textContent = message;
+
+    wrapper.append(icon, text);
+    return wrapper;
 }
 
 // Looks at tabs the rule engine couldn't confidently place ("Other"),
@@ -143,23 +163,56 @@ function categoryToSlug(category) {
 function renderGroups(totalCount, groups) {
     const status = document.getElementById("status");
     const container = document.getElementById("groups");
+    const toolbar = document.getElementById("groups-toolbar");
     container.innerHTML = "";
 
     if (totalCount === 0) {
         status.textContent = "No open tabs.";
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = "Nothing to organize yet — open a few tabs to see them grouped here.";
-        container.appendChild(empty);
+        toolbar.classList.add("hidden");
+        container.appendChild(
+            buildEmptyState(UI_ICONS.inbox, "Nothing to organize yet — open a few tabs to see them grouped here.")
+        );
         return;
     }
 
     const categoryCount = Object.keys(groups).length;
     status.textContent = `${totalCount} open tab${totalCount === 1 ? "" : "s"} · ${categoryCount} group${categoryCount === 1 ? "" : "s"}`;
 
+    let index = 0;
     for (const [category, tabs] of Object.entries(groups)) {
-        container.appendChild(buildGroupElement(category, tabs));
+        const groupEl = buildGroupElement(category, tabs);
+        // Small staggered delay so groups appear one after another rather than
+        // all at once -- capped so a long list doesn't feel sluggish to reveal.
+        groupEl.style.animationDelay = `${Math.min(index * 30, 150)}ms`;
+        container.appendChild(groupEl);
+        index++;
     }
+
+    // Only worth showing "expand/collapse all" when there's more than one
+    // group -- with a single group it doesn't save any real effort.
+    toolbar.classList.toggle("hidden", categoryCount <= 1);
+    setupToggleAll(container);
+}
+
+// Wires the "Expand all" / "Collapse all" button. Re-bound on every render
+// (via cloneNode) since the group elements it targets are rebuilt each time.
+function setupToggleAll(container) {
+    const button = document.getElementById("toggle-all-btn");
+    const freshButton = button.cloneNode(true);
+    button.replaceWith(freshButton);
+
+    freshButton.dataset.action = "expand";
+    freshButton.textContent = "Expand all";
+
+    freshButton.addEventListener("click", () => {
+        const shouldExpand = freshButton.dataset.action === "expand";
+        container.querySelectorAll(".group").forEach((group) => {
+            group.classList.toggle("collapsed", !shouldExpand);
+            group.querySelector(".group-header").setAttribute("aria-expanded", String(shouldExpand));
+        });
+        freshButton.dataset.action = shouldExpand ? "collapse" : "expand";
+        freshButton.textContent = shouldExpand ? "Collapse all" : "Expand all";
+    });
 }
 
 function buildGroupElement(category, tabs) {
@@ -174,9 +227,10 @@ function buildGroupElement(category, tabs) {
     header.setAttribute("role", "button");
     header.setAttribute("aria-expanded", "false");
 
-    const dot = document.createElement("span");
-    dot.className = "dot";
-    dot.style.background = `var(--cat-${slug}, var(--cat-other))`;
+    const badge = document.createElement("span");
+    badge.className = "cat-badge";
+    badge.style.background = `var(--cat-${slug}, var(--cat-other))`;
+    badge.innerHTML = getCategoryIcon(category);
 
     const title = document.createElement("span");
     title.className = "group-title";
@@ -188,9 +242,9 @@ function buildGroupElement(category, tabs) {
 
     const chevron = document.createElement("span");
     chevron.className = "chevron";
-    chevron.textContent = "▾";
+    chevron.innerHTML = UI_ICONS.chevron;
 
-    header.append(dot, title, count, chevron);
+    header.append(badge, title, count, chevron);
 
     const toggle = () => {
         const collapsed = group.classList.toggle("collapsed");
@@ -204,6 +258,11 @@ function buildGroupElement(category, tabs) {
         }
     });
 
+    // group-body wraps the list so we can animate its height smoothly via
+    // CSS grid-template-rows, rather than instantly showing/hiding it.
+    const body = document.createElement("div");
+    body.className = "group-body";
+
     const list = document.createElement("ul");
     list.className = "tab-list";
 
@@ -211,7 +270,8 @@ function buildGroupElement(category, tabs) {
         list.appendChild(buildTabElement(tab));
     }
 
-    group.append(header, list);
+    body.appendChild(list);
+    group.append(header, body);
     return group;
 }
 
@@ -219,6 +279,7 @@ function buildTabElement(tab) {
     const item = document.createElement("li");
     item.className = "tab-item";
     item.tabIndex = 0;
+    item.title = tab.url;
 
     const favicon = document.createElement("img");
     favicon.className = "tab-favicon";
@@ -231,7 +292,6 @@ function buildTabElement(tab) {
     const title = document.createElement("span");
     title.className = "tab-title";
     title.textContent = tab.title || tab.url;
-    item.title = tab.url;
 
     item.append(favicon, title);
 
@@ -247,7 +307,7 @@ function buildTabElement(tab) {
     return item;
 }
 
-// Shows/hides the "Close duplicates" button based on whether any exist,
+// Shows/hides the "Close duplicates" card based on whether any exist,
 // and wires up the click handler to actually close them and refresh the view.
 function renderDuplicateAction(tabs) {
     const actionBar = document.getElementById("action-bar");
@@ -261,16 +321,73 @@ function renderDuplicateAction(tabs) {
     }
 
     actionBar.classList.remove("hidden");
-    button.textContent = `Close ${duplicateCount} duplicate${duplicateCount === 1 ? "" : "s"}`;
 
     const freshButton = button.cloneNode(true);
     button.replaceWith(freshButton);
 
+    freshButton.querySelector(".action-icon").innerHTML = UI_ICONS.duplicates;
+    freshButton.querySelector(".action-text").textContent =
+        `Close ${duplicateCount} duplicate${duplicateCount === 1 ? "" : "s"}`;
+
     freshButton.addEventListener("click", async () => {
         freshButton.disabled = true;
-        freshButton.textContent = "Closing…";
+        freshButton.querySelector(".action-text").textContent = "Closing…";
         await closeDuplicateTabs(tabs);
         await init();
+    });
+}
+
+// --- Confirm modal ---
+// A custom, in-popup replacement for window.confirm(). Native browser
+// dialogs look and feel disconnected from the extension (different styling,
+// can interrupt popup focus) -- this keeps the whole interaction inside
+// ClaroTab's own UI instead.
+
+/**
+ * Shows a confirmation modal and resolves to true/false based on the choice.
+ * @param {string} title
+ * @param {string} message
+ * @param {{ confirmLabel?: string }} [options]
+ * @returns {Promise<boolean>}
+ */
+function showConfirm(title, message, options = {}) {
+    const overlay = document.getElementById("modal-overlay");
+    const titleEl = document.getElementById("modal-title");
+    const messageEl = document.getElementById("modal-message");
+    const confirmBtn = document.getElementById("modal-confirm");
+    const cancelBtn = document.getElementById("modal-cancel");
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    confirmBtn.textContent = options.confirmLabel || "Confirm";
+
+    overlay.classList.remove("hidden");
+    confirmBtn.focus();
+
+    return new Promise((resolve) => {
+        const cleanup = (result) => {
+            overlay.classList.add("hidden");
+            confirmBtn.removeEventListener("click", onConfirm);
+            cancelBtn.removeEventListener("click", onCancel);
+            overlay.removeEventListener("click", onOverlayClick);
+            document.removeEventListener("keydown", onKeydown);
+            resolve(result);
+        };
+
+        const onConfirm = () => cleanup(true);
+        const onCancel = () => cleanup(false);
+        const onOverlayClick = (e) => {
+            if (e.target === overlay) cleanup(false); // clicking the dimmed backdrop cancels
+        };
+        const onKeydown = (e) => {
+            if (e.key === "Escape") cleanup(false);
+            if (e.key === "Enter") cleanup(true);
+        };
+
+        confirmBtn.addEventListener("click", onConfirm);
+        cancelBtn.addEventListener("click", onCancel);
+        overlay.addEventListener("click", onOverlayClick);
+        document.addEventListener("keydown", onKeydown);
     });
 }
 
@@ -339,24 +456,24 @@ async function renderSessions() {
         sessions = await getSessions();
     } catch (err) {
         console.error("ClaroTab: failed to load sessions:", err);
-        const error = document.createElement("div");
-        error.className = "empty-state";
-        error.textContent = "Couldn't load saved sessions. Try reopening the popup.";
-        container.appendChild(error);
+        container.appendChild(
+            buildEmptyState(UI_ICONS.alert, "Couldn't load saved sessions. Try reopening the popup.")
+        );
         return;
     }
 
     if (sessions.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "empty-state";
-        empty.textContent = "No saved sessions yet. Save your current tabs to restore them later.";
-        container.appendChild(empty);
+        container.appendChild(
+            buildEmptyState(UI_ICONS.inbox, "No saved sessions yet. Save your current tabs to restore them later.")
+        );
         return;
     }
 
-    for (const session of sessions) {
-        container.appendChild(buildSessionElement(session));
-    }
+    sessions.forEach((session, index) => {
+        const sessionEl = buildSessionElement(session);
+        sessionEl.style.animationDelay = `${Math.min(index * 30, 150)}ms`;
+        container.appendChild(sessionEl);
+    });
 }
 
 function buildSessionElement(session) {
@@ -400,7 +517,11 @@ function buildSessionElement(session) {
     deleteBtn.className = "session-btn session-btn-delete";
     deleteBtn.textContent = "Delete";
     deleteBtn.addEventListener("click", async () => {
-        const confirmed = confirm(`Delete "${session.name}"? This can't be undone.`);
+        const confirmed = await showConfirm(
+            "Delete session?",
+            `"${session.name}" will be permanently removed. This can't be undone.`,
+            { confirmLabel: "Delete" }
+        );
         if (!confirmed) return;
 
         await deleteSession(session.id);

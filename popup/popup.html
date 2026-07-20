@@ -23,7 +23,15 @@
 
   <div id="tabs-view">
     <div id="action-bar" class="hidden">
-      <button id="close-duplicates-btn"></button>
+      <button id="close-duplicates-btn">
+        <span class="action-icon"></span>
+        <span class="action-text"></span>
+      </button>
+    </div>
+
+    <div id="groups-toolbar" class="hidden">
+      <span class="toolbar-label">Groups</span>
+      <button id="toggle-all-btn">Expand all</button>
     </div>
 
     <div id="groups"></div>
@@ -36,6 +44,17 @@
     </div>
 
     <div id="session-list"></div>
+  </div>
+
+  <div id="modal-overlay" class="hidden">
+    <div id="modal" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message">
+      <h3 id="modal-title"></h3>
+      <p id="modal-message"></p>
+      <div class="modal-actions">
+        <button id="modal-cancel" class="modal-btn modal-btn-secondary">Cancel</button>
+        <button id="modal-confirm" class="modal-btn modal-btn-danger">Confirm</button>
+      </div>
+    </div>
   </div>
 
   <script type="module" src="popup.js"></script>

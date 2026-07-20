@@ -6,10 +6,10 @@
   --border: #e6e8ee;
   --accent: #3457d5;
   --accent-soft: #eaefff;
-  --radius: 8px;
+  --radius: 10px;
 
   /* Category color-coding -- the signature element. Each category gets
-     a consistent dot color so the eye learns to scan for it instantly. */
+     a consistent color used for its badge background. */
   --cat-coding: #6c5ce7;
   --cat-shopping: #e8590c;
   --cat-entertainment: #e64980;
@@ -42,14 +42,25 @@ body {
   width: 360px;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  background: var(--bg);
+  background:
+    radial-gradient(circle at top left, rgba(52, 87, 213, 0.06), transparent 55%),
+    var(--bg);
   color: var(--ink);
 }
 
+button,
+input {
+  font-family: inherit;
+}
+
+/* --- Header --- */
+
 header {
   padding: 14px 16px 12px;
-  border-bottom: 1px solid var(--border);
   background: var(--surface);
+  box-shadow: 0 1px 0 var(--border), 0 4px 14px rgba(20, 22, 30, 0.04);
+  position: relative;
+  z-index: 1;
 }
 
 .brand {
@@ -79,207 +90,187 @@ h1 {
   margin: 6px 0 0 18px;
 }
 
-#groups {
-  max-height: 420px;
-  overflow-y: auto;
-  padding: 8px 10px 12px;
-}
-
-/* --- Nav bar (switches between Tabs / Sessions views) --- */
+/* --- Nav: segmented pill control --- */
 
 #tabs-nav {
   display: flex;
-  gap: 4px;
-  padding: 10px 16px 0;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  gap: 2px;
+  margin: 10px 16px 0;
+  padding: 3px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
 }
 
 .nav-btn {
   flex: 1;
-  padding: 7px 0 9px;
+  padding: 6px 0;
   background: none;
   border: none;
-  border-bottom: 2px solid transparent;
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 650;
   color: var(--ink-soft);
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.nav-btn:hover {
+  color: var(--ink);
 }
 
 .nav-btn.active {
+  background: var(--surface);
   color: var(--accent);
-  border-bottom-color: var(--accent);
+  box-shadow: 0 1px 3px rgba(20, 22, 30, 0.08);
+}
+
+.nav-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .hidden {
   display: none;
 }
 
-/* --- Sessions view --- */
-
-#save-session-bar {
-  display: flex;
-  gap: 6px;
-  padding: 10px 16px;
-}
-
-#session-name-input {
-  flex: 1;
-  min-width: 0;
-  padding: 7px 9px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 12.5px;
-  background: var(--surface);
-  color: var(--ink);
-}
-
-#session-name-input:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-#save-session-btn {
-  padding: 7px 12px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-#save-session-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-#session-list {
-  max-height: 360px;
-  overflow-y: auto;
-  padding: 0 10px 12px;
-}
-
-.session-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px;
-  border-radius: var(--radius);
-  margin-bottom: 4px;
-}
-
-.session-item:hover {
-  background: var(--surface);
-}
-
-.session-info {
-  min-width: 0;
-}
-
-.session-name {
-  font-size: 13px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.session-meta {
-  font-size: 11px;
-  color: var(--ink-soft);
-  margin-top: 1px;
-}
-
-.session-actions {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-}
-
-.session-btn {
-  padding: 5px 8px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  border: none;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.session-btn-delete {
-  background: transparent;
-  color: var(--ink-soft);
-}
-
-.session-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
+/* --- Action bar: "Close duplicates" suggestion card --- */
 
 #action-bar {
   padding: 10px 16px 0;
 }
 
-#action-bar.hidden {
-  display: none;
-}
-
 #close-duplicates-btn {
   width: 100%;
-  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
   background: var(--accent-soft);
-  color: var(--accent);
   border: none;
   border-radius: var(--radius);
-  font-size: 12.5px;
-  font-weight: 600;
   cursor: pointer;
-  font-family: inherit;
+  text-align: left;
+  transition: filter 0.12s ease, transform 0.06s ease;
 }
 
 #close-duplicates-btn:hover {
   filter: brightness(0.97);
 }
 
+#close-duplicates-btn:active {
+  transform: scale(0.99);
+}
+
 #close-duplicates-btn:disabled {
   cursor: default;
-  opacity: 0.6;
+  opacity: 0.65;
+}
+
+.action-icon {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.action-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.action-text {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--accent);
+}
+
+/* --- Groups toolbar (expand/collapse all) --- */
+
+#groups-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 4px;
+}
+
+.toolbar-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-soft);
+}
+
+#toggle-all-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+#toggle-all-btn:hover {
+  text-decoration: underline;
+}
+
+/* --- Groups list --- */
+
+#groups {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 6px 10px 12px;
 }
 
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  padding: 32px 16px;
+  padding: 30px 20px;
   color: var(--ink-soft);
-  font-size: 13px;
+  font-size: 12.5px;
+  gap: 10px;
+}
+
+.empty-state svg {
+  width: 30px;
+  height: 30px;
+  opacity: 0.5;
 }
 
 .group {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
   border-radius: var(--radius);
   overflow: hidden;
+  animation: itemIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .group-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 8px;
+  gap: 9px;
+  padding: 7px 6px;
   cursor: pointer;
   border-radius: var(--radius);
   user-select: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .group-header:hover {
   background: var(--surface);
+  box-shadow: 0 2px 8px rgba(20, 22, 30, 0.06);
+}
+
+.group-header:active {
+  transform: scale(0.99);
 }
 
 .group-header:focus-visible {
@@ -287,48 +278,78 @@ h1 {
   outline-offset: 1px;
 }
 
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.cat-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 3px rgba(20, 22, 30, 0.15);
+}
+
+.cat-badge svg {
+  width: 13px;
+  height: 13px;
 }
 
 .group-title {
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+  color: var(--ink);
   flex: 1;
 }
 
 .group-count {
   font-size: 11px;
+  font-weight: 600;
   color: var(--ink-soft);
-  background: var(--accent-soft);
-  padding: 1px 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1px 7px;
   border-radius: 10px;
 }
 
 .chevron {
-  font-size: 10px;
+  display: inline-flex;
   color: var(--ink-soft);
-  transition: transform 0.15s ease;
+  transition: transform 0.18s ease;
+  flex-shrink: 0;
+}
+
+.chevron svg {
+  width: 15px;
+  height: 15px;
 }
 
 .group.collapsed .chevron {
   transform: rotate(-90deg);
 }
 
-.group.collapsed .tab-list {
-  display: none;
+/* Smooth collapse/expand using the CSS grid-rows trick -- animates to/from
+   "auto" height without needing JS to measure pixel heights. */
+.group-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.2s ease;
+}
+
+.group.collapsed .group-body {
+  grid-template-rows: 0fr;
+}
+
+.group-body>.tab-list {
+  min-height: 0;
+  overflow: hidden;
 }
 
 .tab-list {
   list-style: none;
   margin: 0;
-  padding: 0 4px 4px;
+  padding: 2px 4px 6px;
 }
 
 .tab-item {
@@ -336,13 +357,18 @@ h1 {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: 7px;
   cursor: pointer;
   font-size: 13px;
+  transition: background 0.12s ease, transform 0.1s ease;
 }
 
 .tab-item:hover {
   background: var(--surface);
+}
+
+.tab-item:active {
+  transform: scale(0.98);
 }
 
 .tab-item:focus-visible {
@@ -364,8 +390,315 @@ h1 {
   text-overflow: ellipsis;
 }
 
+/* --- Sessions view --- */
+
+#save-session-bar {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+}
+
+#session-name-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12.5px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+#session-name-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+#save-session-btn {
+  padding: 7px 12px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+
+#save-session-btn:hover {
+  filter: brightness(1.08);
+}
+
+#save-session-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+#session-list {
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 0 10px 12px;
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 8px;
+  border-radius: var(--radius);
+  margin-bottom: 3px;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  animation: itemIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.session-item:hover {
+  background: var(--surface);
+  box-shadow: 0 2px 8px rgba(20, 22, 30, 0.06);
+}
+
+.session-info {
+  min-width: 0;
+}
+
+.session-name {
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-meta {
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 1px;
+}
+
+.session-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.session-btn {
+  padding: 5px 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+
+.session-btn:hover {
+  filter: brightness(0.96);
+}
+
+.session-btn-delete {
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.session-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* --- Press feedback: the thing that makes buttons feel physically clickable --- */
+
+.nav-btn,
+#toggle-all-btn,
+#save-session-btn,
+.session-btn,
+#close-duplicates-btn,
+.modal-btn {
+  transform: scale(1);
+  transition: filter 0.12s ease, transform 0.08s ease, background 0.12s ease, color 0.12s ease;
+}
+
+.nav-btn:active,
+#toggle-all-btn:active,
+#save-session-btn:active,
+.session-btn:active,
+#close-duplicates-btn:active,
+.modal-btn:active {
+  transform: scale(0.96);
+}
+
+/* --- Hover elevation: rows lift slightly instead of just swapping background --- */
+
+.group-header,
+.tab-item,
+.session-item {
+  transition: background 0.12s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.group-header:hover,
+.tab-item:hover,
+.session-item:hover {
+  background: var(--surface);
+  box-shadow: 0 1px 6px rgba(20, 22, 30, 0.06);
+}
+
+.tab-item:active {
+  transform: scale(0.985);
+}
+
+/* --- Loading pulse on the brand mark while tabs are being read --- */
+
+.brand-mark.loading {
+  animation: pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+/* --- Staggered entrance animation for list items --- */
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.group {
+  animation: rise-in 0.22s ease both;
+}
+
+.session-item {
+  animation: rise-in 0.22s ease both;
+}
+
+/* --- Confirm modal --- */
+
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 24, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: overlay-fade-in 0.15s ease;
+}
+
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+#modal {
+  width: 280px;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 12px 28px rgba(15, 17, 24, 0.25);
+  animation: modal-pop-in 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+@keyframes modal-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+#modal-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+
+#modal-message {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 0 0 14px;
+  line-height: 1.45;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.modal-btn {
+  padding: 7px 12px;
+  border: none;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.modal-btn-secondary {
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--border);
+}
+
+.modal-btn-secondary:hover {
+  background: var(--border);
+}
+
+.modal-btn-danger {
+  background: #e03131;
+  color: white;
+}
+
+.modal-btn-danger:hover {
+  filter: brightness(1.08);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .chevron {
+
+  .chevron,
+  .group-body,
+  #close-duplicates-btn,
+  .group-header,
+  .tab-item,
+  .session-item,
+  .nav-btn,
+  #save-session-btn,
+  .session-btn,
+  .modal-btn,
+  #modal-overlay,
+  #modal,
+  .brand-mark.loading,
+  .group {
+    animation: none;
     transition: none;
   }
 }
