@@ -1,47 +1,95 @@
-# ClaroTab
+<div align="center">
+  <img src="icons/icon128.png" alt="ClaroTab Logo" width="96" height="96">
+  <h1>ClaroTab</h1>
+  <p><strong>A smart, AI-assisted Chrome extension that groups, cleans up, and helps you restore your browser tabs.</strong></p>
+</div>
 
-A Chrome extension that automatically groups, cleans up, and helps you restore your browser tabs — so you never lose track of 30 open tabs again.
+---
 
-## Status
+## Overview
 
-🚧 Early development — building step by step.
+ClaroTab organizes messy tab sprawl into clear, color-coded categories at a glance. It combines an instant rule-based engine (no network calls, no waiting) with an optional AI layer, powered by Google's Gemini API, that classifies the tabs the rules can't confidently place. Everything runs locally in your browser — ClaroTab has no server of its own and collects no data.
 
-## Features (planned)
+## Features
 
-- [ ] Automatic tab grouping by category (rule-based)
-- [ ] Smarter categorization via Gemini API fallback
-- [ ] Close duplicate tabs
-- [ ] Save and restore full tab sessions
-- [ ] Popup UI to browse and jump between groups
+- **Instant tab grouping** — categorizes open tabs the moment you open the popup, using a fast rule-based engine (no network required).
+- **AI refinement (optional)** — ambiguous tabs that the rules can't confidently categorize are classified in the background via the Gemini API, then cached so the same site is never re-classified.
+- **Duplicate detection** — spot and close duplicate tabs in one click, always keeping the tab you're actively viewing.
+- **Session save & restore** — save your current tabs as a named session and reopen the whole set later, even after closing your browser.
+- **Clean, responsive UI** — collapsible category groups, favicons, keyboard navigation, and dark mode support.
+
+## Installation
+
+ClaroTab isn't yet published on the Chrome Web Store, so for now it's installed manually as an unpacked extension. This works identically to a store install once loaded — the only difference is you won't get automatic updates.
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/Haseeb-Hassan66/ClaroTab.git
+   ```
+2. Open `chrome://extensions` (or `brave://extensions`, `edge://extensions` — any Chromium-based browser works).
+3. Enable **Developer mode** (top-right toggle).
+4. Click **Load unpacked** and select the cloned `ClaroTab` folder.
+5. Pin the extension to your toolbar.
+
+That's it — ClaroTab works immediately with rule-based grouping. AI refinement is optional and requires a one-time setup below.
+
+## Enabling AI refinement (optional)
+
+Most tabs are categorized instantly by the built-in rules and never touch the network. For the few that aren't recognized, ClaroTab can optionally ask Gemini to classify them:
+
+1. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+2. In the project root, copy the example config file:
+   ```bash
+   cp config.example.js config.js
+   ```
+   (On Windows, just duplicate the file and rename the copy to `config.js`.)
+3. Open `config.js` and replace `"YOUR_GEMINI_API_KEY_HERE"` with your key.
+4. Reload the extension.
+
+`config.js` is excluded from version control, so your key is never committed or shared. If you skip this step, ClaroTab still works fully — unrecognized tabs are simply grouped under "Other" instead of being AI-classified.
+
+## Privacy
+
+- ClaroTab reads the titles and URLs of your open tabs to categorize and group them. This happens entirely on your device.
+- If AI refinement is enabled, only the title and URL of tabs the rule engine couldn't classify are sent to Google's Gemini API — never your full browsing history, and never tabs the rules already handled.
+- Saved sessions and AI-category caches are stored locally in your browser via `chrome.storage.local`. Nothing is transmitted to any server operated by ClaroTab, because ClaroTab has no server.
+- No analytics, tracking, or telemetry of any kind.
 
 ## Project structure
 
-```
-clarotab/
+```text
+ClaroTab/
 ├── manifest.json          # Extension config (Manifest V3)
-├── background.js          # Service worker — background event handling
-├── popup/                 # Toolbar popup UI
+├── background.js          # Service worker for background events
+├── config.example.js      # Template for your Gemini API key (copy to config.js)
+├── popup/                 # Toolbar popup UI (HTML, CSS, JS)
 ├── src/
-│   ├── categorize/        # Rule-based + Gemini categorization logic
-│   ├── tabs/               # Tab querying, grouping, duplicate detection
-│   └── sessions/           # Save/restore tab sessions
-└── icons/                  # Extension icons
+│   ├── categorize/        # Rule-based engine, Gemini fallback, and AI-result cache
+│   ├── tabs/               # Tab querying and duplicate detection
+│   └── sessions/           # Session save/restore/delete
+└── icons/                  # Extension icons (16 / 48 / 128px)
 ```
-
-## Development setup
-
-1. Clone this repo
-2. Go to `chrome://extensions` in Chrome
-3. Enable **Developer mode** (top-right toggle)
-4. Click **Load unpacked** and select this folder
-5. Pin the extension and click its icon to open the popup
 
 ## Tech stack
 
-- Vanilla JavaScript (Manifest V3 Chrome Extension APIs)
-- Gemini API (free tier) for AI-assisted categorization
-- Chrome `storage` API for session persistence
+- Vanilla JavaScript (Manifest V3 Chrome Extension APIs) — no build step, no framework
+- Google Gemini API (free tier) for optional AI-assisted categorization
+- `chrome.storage` for session persistence and AI-result caching
+
+## Requirements
+
+- Any Chromium-based browser: Chrome, Brave, or Edge (Firefox is not currently supported, as it uses a different extension API)
+- A free Google account if you want to enable AI refinement — not required otherwise
+
+## Contributing
+
+Contributions, bug reports, and feature suggestions are welcome.
+
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes with a clear message
+4. Push and open a Pull Request
 
 ## License
 
-TBD
+Licensed under the [MIT License](LICENSE).
