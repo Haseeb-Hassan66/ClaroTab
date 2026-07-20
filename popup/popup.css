@@ -603,6 +603,12 @@ h1 {
   animation: overlay-fade-in 0.15s ease;
 }
 
+/* Needs #id.class specificity to reliably beat the #modal-overlay rule above --
+   a plain .hidden class alone loses to an ID selector regardless of source order. */
+#modal-overlay.hidden {
+  display: none;
+}
+
 @keyframes overlay-fade-in {
   from {
     opacity: 0;
