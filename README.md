@@ -37,16 +37,11 @@ That's it — ClaroTab works immediately with rule-based grouping. AI refinement
 
 Most tabs are categorized instantly by the built-in rules and never touch the network. For the few that aren't recognized, ClaroTab can optionally ask Gemini to classify them:
 
-1. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. In the project root, copy the example config file:
-   ```bash
-   cp config.example.js config.js
-   ```
-   (On Windows, just duplicate the file and rename the copy to `config.js`.)
-3. Open `config.js` and replace `"YOUR_GEMINI_API_KEY_HERE"` with your key.
-4. Reload the extension.
+1. Click the gear icon in the ClaroTab popup to open **Settings**.
+2. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey) (the Settings page links here too).
+3. Paste the key in and click **Save & Test** — ClaroTab verifies it works before saving.
 
-`config.js` is excluded from version control, so your key is never committed or shared. If you skip this step, ClaroTab still works fully — unrecognized tabs are simply grouped under "Other" instead of being AI-classified.
+Your key is stored locally in the browser via `chrome.storage.local` and never leaves your device except when sent directly to Google's API to classify a tab. If you skip this step, ClaroTab still works fully — unrecognized tabs are simply grouped under "Other" instead of being AI-classified.
 
 ## Privacy
 
@@ -61,13 +56,14 @@ Most tabs are categorized instantly by the built-in rules and never touch the ne
 ClaroTab/
 ├── manifest.json          # Extension config (Manifest V3)
 ├── background.js          # Service worker for background events
-├── config.example.js      # Template for your Gemini API key (copy to config.js)
 ├── popup/                 # Toolbar popup UI (HTML, CSS, JS)
+├── options/                # Settings page (API key entry, test, and removal)
 ├── src/
-│   ├── categorize/        # Rule-based engine, Gemini fallback, and AI-result cache
-│   ├── tabs/               # Tab querying and duplicate detection
-│   └── sessions/           # Session save/restore/delete
-└── icons/                  # Extension icons (16 / 48 / 128px)
+│   ├── categorize/         # Rule-based engine, Gemini fallback, and AI-result cache
+│   ├── tabs/                # Tab querying and duplicate detection
+│   ├── sessions/            # Session save/restore/delete
+│   └── settings/            # API key storage (chrome.storage.local)
+└── icons/                   # Extension icons (16 / 48 / 128px)
 ```
 
 ## Tech stack
