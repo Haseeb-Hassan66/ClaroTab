@@ -13,15 +13,6 @@ const MODEL = "gemini-flash-latest";
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 
 /**
- * Classifies a batch of tabs in a single API call (cheaper and faster than
- * one call per tab, and keeps us well within the free tier's daily quota).
- * @param {chrome.tabs.Tab[]} tabs - tabs to classify (already known to be ambiguous)
- * @param {string} apiKey
- * @returns {Promise<Record<number, string>>} map of tab.id -> category name.
- *   Tabs Gemini couldn't confidently classify are simply absent from the result --
- *   callers should treat a missing entry as "leave it as Other".
- */
-/**
  * Sends a minimal request to verify an API key actually works, without the
  * cost/complexity of a real categorization call. Used by the Options page
  * so saving a key gives immediate feedback instead of failing silently later.
@@ -59,9 +50,19 @@ export async function testApiKey(apiKey) {
     }
 }
 
+/**
+ * Classifies a batch of tabs in a single API call (cheaper and faster than
+ * one call per tab, and keeps us well within the free tier's daily quota).
+ * @param {chrome.tabs.Tab[]} tabs - tabs to classify (already known to be ambiguous)
+ * @param {string} apiKey
+ * @returns {Promise<{ categories: Record<string, string>, error: {type: string, message: string} | null }>}
+ *   `categories` maps tab.id -> category name. Tabs Gemini couldn't confidently
+ *   classify are simply absent -- callers should treat a missing entry as "leave as Other".
+ *   `error` is null on success, or a structured reason the caller can show to the user.
+ */
 export async function categorizeTabsWithGemini(tabs, apiKey) {
     if (!apiKey || tabs.length === 0) {
-        return {};
+        return { categories: {}, error: null };
     }
 
     const assignableCategories = CATEGORIES.filter((c) => c !== "Other");
@@ -93,17 +94,39 @@ ${tabList}`;
         });
 
         if (!response.ok) {
-            // Common cases: 429 (rate limit), 400 (bad key), network issues.
-            // We fail silently from the caller's perspective -- rule-based
-            // categories still stand, the extension just doesn't get smarter.
-            console.warn("ClaroTab: Gemini API request failed:", response.status, await response.text());
-            return {};
+            const bodyText = await response.text().catch(() => "");
+            console.warn("ClaroTab: Gemini API request failed:", response.status, bodyText);
+
+            // Classify the failure so the UI can show something specific and
+            // actionable, instead of a generic "something went wrong."
+            if (response.status === 400 || response.status === 403) {
+                return {
+                    categories: {},
+                    error: { type: "auth", message: "AI grouping is off — your API key was rejected. Check it in Settings." },
+                };
+            }
+            if (response.status === 429) {
+                return {
+                    categories: {},
+                    error: { type: "rate_limit", message: "AI grouping paused — you've hit today's free quota. It'll resume automatically." },
+                };
+            }
+            if (response.status === 404) {
+                return {
+                    categories: {},
+                    error: { type: "unknown", message: "AI grouping is temporarily unavailable (model error)." },
+                };
+            }
+            return {
+                categories: {},
+                error: { type: "unknown", message: `AI grouping failed (server error ${response.status}). It'll retry next time.` },
+            };
         }
 
         const data = await response.json();
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) {
-            return {};
+            return { categories: {}, error: null }; // empty response isn't necessarily an error worth surfacing
         }
 
         // Defensive: strip markdown fences in case the model adds them anyway.
@@ -118,9 +141,12 @@ ${tabList}`;
                 result[tabId] = category;
             }
         }
-        return result;
+        return { categories: result, error: null };
     } catch (err) {
         console.warn("ClaroTab: Gemini categorization failed:", err);
-        return {};
+        return {
+            categories: {},
+            error: { type: "network", message: "AI grouping failed — couldn't reach the network. It'll retry next time." },
+        };
     }
 }

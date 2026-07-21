@@ -167,6 +167,86 @@ h1 {
 
 /* --- Action bar: "Close duplicates" suggestion card --- */
 
+/* --- AI status banner: surfaces AI-related state instead of failing silently --- */
+
+#ai-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 16px 0;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  animation: rise-in 0.2s ease both;
+}
+
+#ai-banner.hidden {
+  display: none;
+}
+
+#ai-banner.variant-info {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+#ai-banner.variant-warning {
+  background: #fff4e0;
+  color: #b25a00;
+}
+
+#ai-banner.variant-error {
+  background: #ffe9e9;
+  color: #c0281c;
+}
+
+@media (prefers-color-scheme: dark) {
+  #ai-banner.variant-warning {
+    background: #3a2a10;
+    color: #ffb454;
+  }
+
+  #ai-banner.variant-error {
+    background: #3a1414;
+    color: #ff8a80;
+  }
+}
+
+.ai-banner-icon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.ai-banner-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.ai-banner-text {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.ai-banner-action {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.6);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: inherit;
+  cursor: pointer;
+}
+
+.ai-banner-action:hover {
+  filter: brightness(0.95);
+}
+
+.ai-banner-action.hidden {
+  display: none;
+}
+
 #action-bar {
   padding: 10px 16px 0;
 }

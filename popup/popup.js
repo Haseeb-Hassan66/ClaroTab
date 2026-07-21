@@ -78,17 +78,20 @@ function buildEmptyState(iconSvg, message) {
 async function refineWithAI(tabs, groups) {
     const otherTabs = groups["Other"] || [];
     if (otherTabs.length === 0) {
-        return; // nothing ambiguous -- rules handled everything
+        hideAiBanner(); // nothing ambiguous -- rules handled everything, no banner needed
+        return;
     }
 
     const apiKey = await getApiKey();
     if (!apiKey) {
-        console.log("ClaroTab: no Gemini API key configured -- skipping AI refinement.");
-        showAiHint(otherTabs.length);
+        showAiBanner("info", `Enable AI in Settings to categorize ${otherTabs.length} more tab${otherTabs.length === 1 ? "" : "s"}.`, {
+            actionLabel: "Open Settings",
+            onAction: () => chrome.runtime.openOptionsPage(),
+        });
         return;
     }
 
-    showRefiningIndicator();
+    showAiBanner("info", "Refining with AI…");
 
     const overrides = {}; // tab.id -> category
     const uncachedTabs = [];
@@ -102,8 +105,11 @@ async function refineWithAI(tabs, groups) {
         }
     }
 
+    let apiError = null;
+
     if (uncachedTabs.length > 0) {
-        const aiResults = await categorizeTabsWithGemini(uncachedTabs, apiKey);
+        const { categories: aiResults, error } = await categorizeTabsWithGemini(uncachedTabs, apiKey);
+        apiError = error;
         const newCacheEntries = {};
 
         for (const tab of uncachedTabs) {
@@ -119,9 +125,19 @@ async function refineWithAI(tabs, groups) {
         }
     }
 
+    // Surface a specific, actionable message instead of failing silently.
+    if (apiError) {
+        const variant = apiError.type === "auth" ? "error" : "warning";
+        const options =
+            apiError.type === "auth"
+                ? { actionLabel: "Open Settings", onAction: () => chrome.runtime.openOptionsPage() }
+                : {};
+        showAiBanner(variant, apiError.message, options);
+    } else {
+        hideAiBanner();
+    }
+
     if (Object.keys(overrides).length === 0) {
-        // Nothing new to apply (cache had nothing, API failed, or found nothing
-        // confident) -- still re-render to clear the "Refining..." status text.
         renderGroups(tabs.length, groups);
         return;
     }
@@ -146,17 +162,33 @@ function applyOverrides(tabs, overrides) {
     return groups;
 }
 
-function showRefiningIndicator() {
-    const status = document.getElementById("status");
-    status.textContent += " · Refining with AI…";
+// Shows the AI status banner. variant is "info" | "warning" | "error",
+// each mapped to a distinct color so severity is visually obvious at a glance.
+function showAiBanner(variant, message, { actionLabel, onAction } = {}) {
+    const banner = document.getElementById("ai-banner");
+    const icon = banner.querySelector(".ai-banner-icon");
+    const text = document.getElementById("ai-banner-text");
+    const actionBtn = document.getElementById("ai-banner-action");
+
+    banner.className = `variant-${variant}`; // clears any previous variant class
+    icon.innerHTML = variant === "info" ? UI_ICONS.info : UI_ICONS.alert;
+    text.textContent = message;
+
+    if (actionLabel && onAction) {
+        actionBtn.textContent = actionLabel;
+        actionBtn.classList.remove("hidden");
+        // Replace to clear any previously attached listener from an earlier render.
+        const freshBtn = actionBtn.cloneNode(true);
+        actionBtn.replaceWith(freshBtn);
+        freshBtn.addEventListener("click", onAction);
+    } else {
+        actionBtn.classList.add("hidden");
+    }
 }
 
-// Gently surfaces that AI categorization exists and would help right now --
-// only shown when it's actually relevant (there are uncategorized tabs),
-// so it never nags when everything's already sorted by the rules.
-function showAiHint(otherTabCount) {
-    const status = document.getElementById("status");
-    status.textContent += ` · Enable AI in Settings for ${otherTabCount} more`;
+function hideAiBanner() {
+    const banner = document.getElementById("ai-banner");
+    banner.className = "hidden";
 }
 
 // Turns "Work & Productivity" into "work-productivity" so it can be used
