@@ -1,4 +1,6 @@
-# Secrets — never commit your Gemini API key
+# Secrets -- the Gemini API key now lives in chrome.storage.local via the
+# Options page, not a file. Kept here defensively in case anyone still has
+# an old local config.js from before that change.
 config.js
 .env
 *.key

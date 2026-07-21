@@ -6,7 +6,7 @@ import { countClosableDuplicates, closeDuplicateTabs } from "../src/tabs/duplica
 import { normalizeUrl } from "../src/tabs/duplicates.js";
 import { categorizeTabsWithGemini } from "../src/categorize/gemini.js";
 import { getCachedCategory, setCachedCategories } from "../src/categorize/cache.js";
-import { GEMINI_API_KEY } from "../config.js";
+import { getApiKey } from "../src/settings/apiKey.js";
 import { getSessions, saveSession, deleteSession, restoreSession } from "../src/sessions/storage.js";
 import { getCategoryIcon, UI_ICONS } from "../src/categorize/icons.js";
 
@@ -81,9 +81,10 @@ async function refineWithAI(tabs, groups) {
         return; // nothing ambiguous -- rules handled everything
     }
 
-    const isConfigured = GEMINI_API_KEY && GEMINI_API_KEY !== "YOUR_GEMINI_API_KEY_HERE";
-    if (!isConfigured) {
+    const apiKey = await getApiKey();
+    if (!apiKey) {
         console.log("ClaroTab: no Gemini API key configured -- skipping AI refinement.");
+        showAiHint(otherTabs.length);
         return;
     }
 
@@ -102,7 +103,7 @@ async function refineWithAI(tabs, groups) {
     }
 
     if (uncachedTabs.length > 0) {
-        const aiResults = await categorizeTabsWithGemini(uncachedTabs, GEMINI_API_KEY);
+        const aiResults = await categorizeTabsWithGemini(uncachedTabs, apiKey);
         const newCacheEntries = {};
 
         for (const tab of uncachedTabs) {
@@ -148,6 +149,14 @@ function applyOverrides(tabs, overrides) {
 function showRefiningIndicator() {
     const status = document.getElementById("status");
     status.textContent += " · Refining with AI…";
+}
+
+// Gently surfaces that AI categorization exists and would help right now --
+// only shown when it's actually relevant (there are uncategorized tabs),
+// so it never nags when everything's already sorted by the rules.
+function showAiHint(otherTabCount) {
+    const status = document.getElementById("status");
+    status.textContent += ` · Enable AI in Settings for ${otherTabCount} more`;
 }
 
 // Turns "Work & Productivity" into "work-productivity" so it can be used
@@ -534,6 +543,15 @@ function buildSessionElement(session) {
     return item;
 }
 
+function setupSettingsButton() {
+    const button = document.getElementById("settings-btn");
+    button.innerHTML = UI_ICONS.settings;
+    button.addEventListener("click", () => {
+        chrome.runtime.openOptionsPage();
+    });
+}
+
+setupSettingsButton();
 setupNav();
 setupSaveSession();
 init();

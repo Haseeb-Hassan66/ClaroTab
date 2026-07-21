@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>ClaroTab Settings</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+    <main>
+        <div class="brand">
+            <span class="brand-mark"></span>
+            <h1>ClaroTab Settings</h1>
+        </div>
+
+        <section class="card">
+            <h2>AI categorization</h2>
+            <p class="description">
+                Most tabs are grouped instantly by ClaroTab's built-in rules, with no network access needed.
+                For the few tabs the rules can't confidently place, ClaroTab can optionally ask
+                <strong>Google's Gemini API</strong> to classify them. This is completely optional --
+                everything else works fully without it.
+            </p>
+
+            <div id="status-badge" class="status-badge status-unknown">Checking status…</div>
+
+            <label for="api-key-input">Gemini API key</label>
+            <div class="input-row">
+                <input id="api-key-input" type="password" placeholder="Paste your API key here" autocomplete="off"
+                    spellcheck="false">
+                <button id="toggle-visibility-btn" type="button" title="Show/hide key">Show</button>
+            </div>
+
+            <p class="help-text">
+                Don't have one? Get a free key from
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a>
+                -- it takes about a minute.
+            </p>
+
+            <div class="button-row">
+                <button id="save-btn" class="btn btn-primary">Save & Test</button>
+                <button id="remove-btn" class="btn btn-secondary">Remove key</button>
+            </div>
+
+            <p id="feedback" class="feedback"></p>
+        </section>
+
+        <section class="card">
+            <h2>Privacy</h2>
+            <p class="description">
+                Your key is stored only on this device, in your browser's local extension storage.
+                It's never sent anywhere except directly to Google's API when classifying a tab,
+                and only the title/URL of tabs the rule engine couldn't already categorize are ever sent.
+            </p>
+        </section>
+    </main>
+
+    <script type="module" src="options.js"></script>
+</body>
+
+</html>

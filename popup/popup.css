@@ -63,10 +63,41 @@ header {
   z-index: 1;
 }
 
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .brand {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+#settings-btn {
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 7px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, transform 0.15s ease;
+}
+
+#settings-btn svg {
+  width: 15px;
+  height: 15px;
+}
+
+#settings-btn:hover {
+  background: var(--bg);
+  color: var(--accent);
+  transform: rotate(20deg);
 }
 
 .brand-mark {

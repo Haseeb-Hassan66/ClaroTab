@@ -21,6 +21,44 @@ const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODE
  *   Tabs Gemini couldn't confidently classify are simply absent from the result --
  *   callers should treat a missing entry as "leave it as Other".
  */
+/**
+ * Sends a minimal request to verify an API key actually works, without the
+ * cost/complexity of a real categorization call. Used by the Options page
+ * so saving a key gives immediate feedback instead of failing silently later.
+ * @param {string} apiKey
+ * @returns {Promise<{ ok: boolean, message: string }>}
+ */
+export async function testApiKey(apiKey) {
+    if (!apiKey || !apiKey.trim()) {
+        return { ok: false, message: "Enter a key first." };
+    }
+
+    try {
+        const response = await fetch(`${ENDPOINT}?key=${apiKey.trim()}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: "Reply with just the word OK." }] }],
+                generationConfig: { temperature: 0, maxOutputTokens: 10 },
+            }),
+        });
+
+        if (response.status === 400 || response.status === 403) {
+            return { ok: false, message: "That key was rejected -- double check it's correct." };
+        }
+        if (response.status === 429) {
+            return { ok: false, message: "Key looks valid, but you're currently rate-limited. Try again shortly." };
+        }
+        if (!response.ok) {
+            return { ok: false, message: `Unexpected error (status ${response.status}).` };
+        }
+
+        return { ok: true, message: "Key verified -- AI categorization is ready." };
+    } catch (err) {
+        return { ok: false, message: "Couldn't reach the API. Check your internet connection." };
+    }
+}
+
 export async function categorizeTabsWithGemini(tabs, apiKey) {
     if (!apiKey || tabs.length === 0) {
         return {};
