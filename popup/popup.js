@@ -1,11 +1,11 @@
 // This file runs whenever the user clicks the extension icon and popup.html opens.
 
 import { getAllTabs } from "../src/tabs/query.js";
-import { groupTabsByCategory, categorizeTab } from "../src/categorize/rules.js";
+import { categorizeTab } from "../src/categorize/rules.js";
 import { countClosableDuplicates, closeDuplicateTabs } from "../src/tabs/duplicates.js";
 import { normalizeUrl } from "../src/tabs/duplicates.js";
 import { categorizeTabsWithGemini } from "../src/categorize/gemini.js";
-import { getCachedCategory, setCachedCategories } from "../src/categorize/cache.js";
+import { getCachedCategoriesMap, setCachedCategories } from "../src/categorize/cache.js";
 import { getApiKey } from "../src/settings/apiKey.js";
 import { getSessions, saveSession, deleteSession, restoreSession } from "../src/sessions/storage.js";
 import { getCategoryIcon, UI_ICONS } from "../src/categorize/icons.js";
@@ -21,20 +21,24 @@ async function init() {
     try {
         const tabs = await getAllTabs();
         currentTabs = tabs;
-        const groups = groupTabsByCategory(tabs);
+
+        // Resolve every tab's category up front, combining rules AND the AI
+        // cache in one pass -- this is what prevents previously-AI-classified
+        // tabs from flashing as "Other" before being corrected a moment later.
+        const { categoryByTabId, unresolvedTabs } = await resolveCategories(tabs);
+        const groups = buildGroupsFromCategoryMap(tabs, categoryByTabId);
 
         console.log("Tabs found:", tabs);
-        console.log("Grouped (rules only):", groups);
+        console.log("Grouped (rules + cache):", groups);
+        console.log(`${unresolvedTabs.length} tab(s) genuinely need AI classification`);
 
-        // Render immediately with rule-based results -- the popup should never
-        // feel like it's waiting on the network for its first paint.
         renderGroups(tabs.length, groups);
         renderDuplicateAction(tabs);
 
         // AI refinement is a bonus layer -- if it throws for any reason we
         // haven't already anticipated, it must never take down the whole popup.
         try {
-            await refineWithAI(tabs, groups);
+            await refineWithAI(tabs, unresolvedTabs, categoryByTabId);
         } catch (err) {
             console.warn("ClaroTab: AI refinement step failed unexpectedly:", err);
         }
@@ -72,94 +76,111 @@ function buildEmptyState(iconSvg, message) {
     return wrapper;
 }
 
-// Looks at tabs the rule engine couldn't confidently place ("Other"),
-// checks the cache first, and only calls Gemini for the ones still unknown.
-// Re-renders the popup once refined results are in.
-async function refineWithAI(tabs, groups) {
-    const otherTabs = groups["Other"] || [];
-    if (otherTabs.length === 0) {
-        hideAiBanner(); // nothing ambiguous -- rules handled everything, no banner needed
-        return;
-    }
+// Determines the final category for every tab in ONE pass, layering:
+// 1. Rule engine (instant, no network)
+// 2. AI cache (for tabs the rules couldn't place, but Gemini already has)
+// Only tabs that fail BOTH end up in `unresolvedTabs` -- these are the
+// only ones that will ever be sent to the API, guaranteeing we never
+// re-classify (and re-spend tokens on) a tab we already have an answer for.
+async function resolveCategories(tabs) {
+    const cachedCategories = await getCachedCategoriesMap(); // { normalizedUrl: category }
 
-    const apiKey = await getApiKey();
-    if (!apiKey) {
-        showAiBanner("info", `Enable AI in Settings to categorize ${otherTabs.length} more tab${otherTabs.length === 1 ? "" : "s"}.`, {
-            actionLabel: "Open Settings",
-            onAction: () => chrome.runtime.openOptionsPage(),
-        });
-        return;
-    }
+    const categoryByTabId = {};
+    const unresolvedTabs = [];
 
-    showAiBanner("info", "Refining with AI…");
+    for (const tab of tabs) {
+        const ruleCategory = categorizeTab(tab);
 
-    const overrides = {}; // tab.id -> category
-    const uncachedTabs = [];
+        if (ruleCategory !== "Other") {
+            categoryByTabId[tab.id] = ruleCategory;
+            continue;
+        }
 
-    for (const tab of otherTabs) {
-        const cached = await getCachedCategory(normalizeUrl(tab.url));
+        const cached = cachedCategories[normalizeUrl(tab.url)];
         if (cached) {
-            overrides[tab.id] = cached;
+            categoryByTabId[tab.id] = cached;
         } else {
-            uncachedTabs.push(tab);
+            categoryByTabId[tab.id] = "Other";
+            unresolvedTabs.push(tab);
         }
     }
 
-    let apiError = null;
-
-    if (uncachedTabs.length > 0) {
-        const { categories: aiResults, error } = await categorizeTabsWithGemini(uncachedTabs, apiKey);
-        apiError = error;
-        const newCacheEntries = {};
-
-        for (const tab of uncachedTabs) {
-            const category = aiResults[tab.id];
-            if (category) {
-                overrides[tab.id] = category;
-                newCacheEntries[normalizeUrl(tab.url)] = category;
-            }
-        }
-
-        if (Object.keys(newCacheEntries).length > 0) {
-            await setCachedCategories(newCacheEntries);
-        }
-    }
-
-    // Surface a specific, actionable message instead of failing silently.
-    if (apiError) {
-        const variant = apiError.type === "auth" ? "error" : "warning";
-        const options =
-            apiError.type === "auth"
-                ? { actionLabel: "Open Settings", onAction: () => chrome.runtime.openOptionsPage() }
-                : {};
-        showAiBanner(variant, apiError.message, options);
-    } else {
-        hideAiBanner();
-    }
-
-    if (Object.keys(overrides).length === 0) {
-        renderGroups(tabs.length, groups);
-        return;
-    }
-
-    const refinedGroups = applyOverrides(tabs, overrides);
-    console.log("Grouped (refined with AI):", refinedGroups);
-    renderGroups(tabs.length, refinedGroups);
-    renderDuplicateAction(tabs);
+    return { categoryByTabId, unresolvedTabs };
 }
 
-// Rebuilds the full grouping, using an AI-assigned category where we have
-// one, falling back to the normal rule engine otherwise.
-function applyOverrides(tabs, overrides) {
+function buildGroupsFromCategoryMap(tabs, categoryByTabId) {
     const groups = {};
     for (const tab of tabs) {
-        const category = overrides[tab.id] || categorizeTab(tab);
+        const category = categoryByTabId[tab.id];
         if (!groups[category]) {
             groups[category] = [];
         }
         groups[category].push(tab);
     }
     return groups;
+}
+
+// Sends only genuinely unresolved tabs to Gemini (never ones the rules or
+// cache already handled), caches any new results, and re-renders using the
+// FULL updated category map -- not a fresh rules-only pass -- so tabs that
+// were already resolved (by rules or cache) can never regress back to
+// "Other" on this second render.
+async function refineWithAI(tabs, unresolvedTabs, categoryByTabId) {
+    if (unresolvedTabs.length === 0) {
+        hideAiBanner(); // everything was already resolved by rules/cache -- no AI work needed at all
+        return;
+    }
+
+    const apiKey = await getApiKey();
+    if (!apiKey) {
+        showAiBanner("info", `Enable AI in Settings to categorize ${unresolvedTabs.length} more tab${unresolvedTabs.length === 1 ? "" : "s"}.`, {
+            actionLabel: "Open Settings",
+            onAction: () => chrome.runtime.openOptionsPage(),
+        });
+        return;
+    }
+
+    showAiBanner("info", `Refining ${unresolvedTabs.length} tab${unresolvedTabs.length === 1 ? "" : "s"} with AI…`);
+
+    const { categories: aiResults, error } = await categorizeTabsWithGemini(unresolvedTabs, apiKey);
+
+    const updatedCategories = { ...categoryByTabId };
+    const newCacheEntries = {};
+    let anyChanged = false;
+
+    for (const tab of unresolvedTabs) {
+        const category = aiResults[tab.id];
+        if (category) {
+            updatedCategories[tab.id] = category;
+            newCacheEntries[normalizeUrl(tab.url)] = category;
+            anyChanged = true;
+        }
+    }
+
+    if (Object.keys(newCacheEntries).length > 0) {
+        await setCachedCategories(newCacheEntries);
+    }
+
+    // Surface a specific, actionable message instead of failing silently.
+    if (error) {
+        const variant = error.type === "auth" ? "error" : "warning";
+        const options =
+            error.type === "auth"
+                ? { actionLabel: "Open Settings", onAction: () => chrome.runtime.openOptionsPage() }
+                : {};
+        showAiBanner(variant, error.message, options);
+    } else {
+        hideAiBanner();
+    }
+
+    if (!anyChanged) {
+        return; // nothing new to show -- current render already stands
+    }
+
+    const refinedGroups = buildGroupsFromCategoryMap(tabs, updatedCategories);
+    console.log("Grouped (refined with AI):", refinedGroups);
+    renderGroups(tabs.length, refinedGroups);
+    renderDuplicateAction(tabs);
 }
 
 // Shows the AI status banner. variant is "info" | "warning" | "error",

@@ -28,6 +28,26 @@ export async function getCachedCategory(normalizedUrl) {
 }
 
 /**
+ * Returns every non-expired cached category as a plain { url: category }
+ * map, in a single storage read. Used to apply known categories to *all*
+ * tabs up front (before the first render), rather than looking them up
+ * one at a time after the fact -- which is both slower and causes tabs
+ * that were already AI-classified to visibly flash as "Other" first.
+ * @returns {Promise<Record<string, string>>}
+ */
+export async function getCachedCategoriesMap() {
+    const cache = await loadCache();
+    const now = Date.now();
+    const result = {};
+    for (const [url, entry] of Object.entries(cache)) {
+        if (now - entry.timestamp <= TTL_MS) {
+            result[url] = entry.category;
+        }
+    }
+    return result;
+}
+
+/**
  * Stores multiple { url: category } results in one write.
  * @param {Record<string, string>} entries
  */
