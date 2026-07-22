@@ -148,12 +148,22 @@ async function refineWithAI(tabs, unresolvedTabs, categoryByTabId) {
     const newCacheEntries = {};
     let anyChanged = false;
 
-    for (const tab of unresolvedTabs) {
-        const category = aiResults[tab.id];
-        if (category) {
+    // Only treat a missing entry as a real "no good category" answer when the
+    // call actually succeeded. On failure (rate limit, network, bad key), we
+    // deliberately leave these tabs unresolved so they get retried next time,
+    // rather than permanently caching them as "Other" based on no real answer.
+    if (!error) {
+        for (const tab of unresolvedTabs) {
+            // Gemini omits a tab from its response when it can't confidently
+            // classify it -- that omission IS a real, cacheable answer ("Other"),
+            // not a failure. Without this, a genuinely uncategorizable tab would
+            // get re-sent to the API on every single popup open, forever.
+            const category = aiResults[tab.id] || "Other";
             updatedCategories[tab.id] = category;
             newCacheEntries[normalizeUrl(tab.url)] = category;
-            anyChanged = true;
+            if (category !== "Other") {
+                anyChanged = true; // only a real category change needs a re-render
+            }
         }
     }
 
