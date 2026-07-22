@@ -324,11 +324,29 @@ function buildTabElement(tab) {
 
     const favicon = document.createElement("img");
     favicon.className = "tab-favicon";
-    favicon.src = tab.favIconUrl || "";
-    favicon.addEventListener("error", () => {
-        favicon.style.background = "var(--border)";
-        favicon.removeAttribute("src");
-    });
+    favicon.alt = "";
+
+    // Only attempt to load an image when there's an actual URL. Assigning an
+    // empty string as `src` still counts as "an image failed to load" in the
+    // browser's eyes, but critically it does NOT fire the `error` event --
+    // so the fallback below never ran, leaving a permanent broken-image icon.
+    // Skipping the assignment entirely avoids the problem altogether.
+    if (tab.favIconUrl) {
+        favicon.src = tab.favIconUrl;
+        favicon.addEventListener(
+            "error",
+            () => {
+                // A real load failure (e.g. a site blocking cross-origin favicon
+                // reads) -- remove the src so the plain color swatch shows instead
+                // of a broken-image glyph.
+                favicon.removeAttribute("src");
+            },
+            { once: true }
+        );
+    }
+    // If there's no favIconUrl at all, we simply never set `src` -- the
+    // element just renders as its default background-color swatch (already
+    // styled in CSS), with no broken-image icon ever appearing.
 
     const title = document.createElement("span");
     title.className = "tab-title";
