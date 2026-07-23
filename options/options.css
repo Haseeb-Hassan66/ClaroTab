@@ -224,6 +224,140 @@ label {
     color: var(--danger);
 }
 
+/* --- AI model list --- */
+
+.card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.card-header-row h2 {
+    margin: 0;
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 650;
+    cursor: pointer;
+    padding: 2px 4px;
+}
+
+.link-btn:hover {
+    text-decoration: underline;
+}
+
+.quota-caveat {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    opacity: 0.85;
+    margin-top: -6px;
+}
+
+#model-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 14px;
+}
+
+.model-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.model-row:hover:not(.model-row-disabled) {
+    border-color: var(--accent);
+}
+
+.model-row.model-row-selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.model-row.model-row-disabled {
+    cursor: default;
+    opacity: 0.55;
+}
+
+.model-row input[type="radio"] {
+    flex-shrink: 0;
+    accent-color: var(--accent);
+    width: 15px;
+    height: 15px;
+}
+
+.model-row-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.model-row-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.model-row-tag {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 1px 6px;
+    border-radius: 8px;
+}
+
+.model-row-status {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top: 3px;
+}
+
+.model-row-status.status-exhausted {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+.gauge-track {
+    width: 100%;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--border);
+    margin-top: 6px;
+    overflow: hidden;
+}
+
+.gauge-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.25s ease;
+}
+
+.gauge-fill.gauge-ok {
+    background: var(--success);
+}
+
+.gauge-fill.gauge-low {
+    background: #f08c00;
+}
+
+.gauge-fill.gauge-exhausted {
+    background: var(--danger);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .btn {
         transition: none;

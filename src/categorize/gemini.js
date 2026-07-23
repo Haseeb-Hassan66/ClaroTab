@@ -3,54 +3,32 @@
 // the primary path -- most tabs never reach this file.
 
 import { CATEGORIES } from "./rules.js";
-
-// Google gives each model its own SEPARATE free-tier quota pool -- hitting
-// the daily/per-minute limit on one model does not affect the others. So
-// instead of failing the moment the primary model is rate-limited, we try
-// a chain of models in order, falling through to the next one whenever a
-// model is out of quota or temporarily unavailable. This means a real user
-// essentially never sees "AI grouping paused" unless ALL of these are
-// exhausted at once, which is rare.
-//
-// Ordered roughly by quality, but deliberately spanning different model
-// families (not just Flash variants of the same generation) -- since
-// quota pools are per-model, family diversity matters more than picking
-// the single "best" model for this simple classification task.
-//
-// Note on "-latest" vs pinned versions: Google has twice rejected pinned
-// stable versions (e.g. gemini-2.5-flash) for this project with "no longer
-// available to new users," while the "-latest" aliases have always worked.
-// The pinned 2.0 entries below carry that same risk -- if they ever get
-// blocked, the code below treats it as a 404 and just skips to the next
-// model automatically, so it's safe to keep them, but the aliases
-// (gemini-flash-latest, gemini-flash-lite-latest, gemini-pro-latest) are
-// the ones this chain actually leans on for reliability.
-const MODEL_FALLBACK_CHAIN = [
-    "gemini-flash-latest",
-    "gemini-flash-lite-latest",
-    "gemini-2.0-flash-001",
-    "gemini-2.0-flash-lite-001",
-    "gemini-pro-latest",
-    "gemma-4-31b-it",
-];
-
-// Remembers which model worked last, so we try it first on the next call
-// rather than always re-attempting exhausted models from the top of the
-// chain. Resets naturally when the popup/service worker restarts -- that's
-// fine, quota windows roll over anyway.
-let preferredModelIndex = 0;
+import { MODEL_FALLBACK_CHAIN } from "./models.js";
+import { trackUsage, getUsageMap, getPreferredModel } from "../settings/modelUsage.js";
 
 function endpointFor(model) {
     return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 }
 
-// Returns the fallback chain reordered to start from whichever model
-// worked most recently, then continue through the rest in normal order.
-function orderedModels() {
-    return [
-        ...MODEL_FALLBACK_CHAIN.slice(preferredModelIndex),
-        ...MODEL_FALLBACK_CHAIN.slice(0, preferredModelIndex),
-    ];
+// Decides which order to try models in for this call:
+//  1. The user's manually pinned model goes first, UNLESS it's already
+//     known to be exhausted today (no point trying it, and it lets
+//     automatic fallback kick in even with a pin set).
+//  2. Among the rest, models NOT already known to be exhausted go before
+//     ones that are -- avoids wasting a request re-confirming something
+//     we already have real (429-based) evidence about.
+async function getOrderedModels() {
+    const [usageMap, preferredModel] = await Promise.all([getUsageMap(), getPreferredModel()]);
+
+    const notExhausted = MODEL_FALLBACK_CHAIN.filter((m) => !usageMap[m]?.exhausted);
+    const exhausted = MODEL_FALLBACK_CHAIN.filter((m) => usageMap[m]?.exhausted);
+    let chain = [...notExhausted, ...exhausted];
+
+    if (preferredModel && chain.includes(preferredModel) && !usageMap[preferredModel]?.exhausted) {
+        chain = [preferredModel, ...chain.filter((m) => m !== preferredModel)];
+    }
+
+    return chain;
 }
 
 /**
@@ -81,7 +59,10 @@ export async function testApiKey(apiKey) {
             return { ok: false, message: "That key was rejected -- double check it's correct." };
         }
         if (response.status === 429) {
-            return { ok: true, message: "Key verified -- AI categorization is ready. (This particular model is briefly busy, but ClaroTab automatically falls back to others when needed.)" };
+            return {
+                ok: true,
+                message: "Key verified -- AI categorization is ready. (This particular model is briefly busy, but ClaroTab automatically falls back to others when needed.)",
+            };
         }
         if (!response.ok) {
             return { ok: false, message: `Unexpected error (status ${response.status}).` };
@@ -105,20 +86,18 @@ async function attemptModel(model, apiKey, requestBody) {
     });
 
     if (response.status === 429) {
-        // This model's quota is used up right now -- a different model's
-        // separate quota pool is very likely still available, so keep going.
         console.log(`ClaroTab: ${model} is rate-limited, trying the next model...`);
+        await trackUsage(model, { rateLimited: true });
         return { ok: false, tryNextModel: true, error: { type: "rate_limit", message: "" } };
     }
     if (response.status === 404) {
         // This specific model isn't available to this project (Google rotates
         // this over time) -- same recovery as rate-limiting: try the next one.
+        // Not counted as "usage" since the request never actually ran.
         console.log(`ClaroTab: ${model} is unavailable, trying the next model...`);
         return { ok: false, tryNextModel: true, error: { type: "unknown", message: "" } };
     }
     if (response.status === 400 || response.status === 403) {
-        // A bad/revoked key fails identically on every model -- no point
-        // burning through the whole fallback chain to confirm that five times.
         const bodyText = await response.text().catch(() => "");
         console.warn("ClaroTab: Gemini API request failed:", response.status, bodyText);
         return {
@@ -137,30 +116,27 @@ async function attemptModel(model, apiKey, requestBody) {
         };
     }
 
+    await trackUsage(model, { rateLimited: false });
+
     const data = await response.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-        return { ok: true, categories: {} }; // empty response isn't necessarily an error worth surfacing
+        return { ok: true, categories: {} };
     }
 
-    // Defensive: strip markdown fences in case the model adds them anyway.
     const cleaned = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(cleaned);
     return { ok: true, categories: parsed };
 }
 
 /**
- * Classifies a batch of tabs in a single API call (cheaper and faster than
- * one call per tab, and keeps us well within any single model's free-tier
- * quota). Automatically falls back through MODEL_FALLBACK_CHAIN if a model
- * is rate-limited or temporarily unavailable, so a real user essentially
- * never sees "AI grouping paused" unless every model is exhausted at once.
+ * Classifies a batch of tabs in a single API call. Automatically falls
+ * back through the model chain if one is rate-limited or unavailable, and
+ * tracks real usage per model so both the fallback ordering and the
+ * Settings quota display reflect actual observed behavior.
  * @param {chrome.tabs.Tab[]} tabs - tabs to classify (already known to be ambiguous)
  * @param {string} apiKey
  * @returns {Promise<{ categories: Record<string, string>, error: {type: string, message: string} | null }>}
- *   `categories` maps tab.id -> category name. Tabs Gemini couldn't confidently
- *   classify are simply absent -- callers should treat a missing entry as "leave as Other".
- *   `error` is null on success, or a structured reason the caller can show to the user.
  */
 export async function categorizeTabsWithGemini(tabs, apiKey) {
     if (!apiKey || tabs.length === 0) {
@@ -185,7 +161,7 @@ ${tabList}`;
     const requestBody = JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
-            temperature: 0, // deterministic classification, not creative writing
+            temperature: 0,
             responseMimeType: "application/json",
         },
     });
@@ -193,15 +169,12 @@ ${tabList}`;
     let lastError = null;
 
     try {
-        for (const model of orderedModels()) {
+        const chain = await getOrderedModels();
+
+        for (const model of chain) {
             const result = await attemptModel(model, apiKey, requestBody);
 
             if (result.ok) {
-                // Remember this model worked -- try it first next time.
-                preferredModelIndex = MODEL_FALLBACK_CHAIN.indexOf(model);
-
-                // Only keep entries that match a category we actually recognize --
-                // never trust external/AI output blindly.
                 const filtered = {};
                 for (const [tabId, category] of Object.entries(result.categories)) {
                     if (assignableCategories.includes(category)) {
@@ -213,10 +186,8 @@ ${tabList}`;
 
             lastError = result.error;
             if (!result.tryNextModel) {
-                // Auth/server errors won't be fixed by switching models -- stop here.
                 return { categories: {}, error: result.error };
             }
-            // Otherwise (rate-limited or unavailable): loop continues to the next model.
         }
     } catch (err) {
         console.warn("ClaroTab: Gemini categorization failed:", err);
@@ -226,7 +197,6 @@ ${tabList}`;
         };
     }
 
-    // Every model in the chain was rate-limited or unavailable.
     return {
         categories: {},
         error: {
