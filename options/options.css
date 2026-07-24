@@ -309,6 +309,10 @@ label {
     font-weight: 650;
 }
 
+.model-row.model-row-active {
+    border-color: var(--success);
+}
+
 .model-row-tag {
     font-size: 10px;
     font-weight: 700;
@@ -318,6 +322,11 @@ label {
     background: var(--accent-soft);
     padding: 1px 6px;
     border-radius: 8px;
+}
+
+.model-row-tag-active {
+    color: var(--success);
+    background: var(--success-soft);
 }
 
 .model-row-status {

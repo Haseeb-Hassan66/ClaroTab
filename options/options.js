@@ -1,5 +1,5 @@
 import { getApiKey, setApiKey, clearApiKey } from "../src/settings/apiKey.js";
-import { testApiKey } from "../src/categorize/gemini.js";
+import { testApiKey, getOrderedModels } from "../src/categorize/gemini.js";
 import { MODEL_FALLBACK_CHAIN, MODEL_META } from "../src/categorize/models.js";
 import { getUsageMap, getPreferredModel, setPreferredModel } from "../src/settings/modelUsage.js";
 
@@ -77,15 +77,23 @@ refreshUsageBtn.addEventListener("click", renderModelList);
 async function renderModelList() {
     const [usageMap, preferredModel] = await Promise.all([getUsageMap(), getPreferredModel()]);
 
+    // Uses the exact same ordering logic that actually runs during
+    // categorization, so this can never say something different from what
+    // ClaroTab is really doing.
+    const chain = await getOrderedModels();
+    const activeModel = chain[0];
+
     modelList.innerHTML = "";
-    modelList.appendChild(buildAutoRow(preferredModel));
+    modelList.appendChild(buildAutoRow(preferredModel, activeModel));
 
     for (const modelId of MODEL_FALLBACK_CHAIN) {
-        modelList.appendChild(buildModelRow(modelId, usageMap[modelId], preferredModel === modelId));
+        modelList.appendChild(
+            buildModelRow(modelId, usageMap[modelId], preferredModel === modelId, modelId === activeModel)
+        );
     }
 }
 
-function buildAutoRow(preferredModel) {
+function buildAutoRow(preferredModel, activeModel) {
     const isSelected = preferredModel === null;
 
     const row = document.createElement("label");
@@ -109,21 +117,32 @@ function buildAutoRow(preferredModel) {
 
     const status = document.createElement("div");
     status.className = "model-row-status";
-    status.textContent = "ClaroTab picks the best available model and switches automatically if one runs low.";
+    // Only meaningful to show "currently using X" when Automatic is actually
+    // the active mode -- if a model is pinned, that choice is what governs.
+    status.textContent = isSelected
+        ? `Currently using ${MODEL_META[activeModel].displayName}. Switches automatically if it runs low.`
+        : "ClaroTab picks the best available model and switches automatically if one runs low.";
 
     info.append(name, status);
     row.append(radio, info);
     return row;
 }
 
-function buildModelRow(modelId, usage, isSelected) {
+function buildModelRow(modelId, usage, isSelected, isActive) {
     const meta = MODEL_META[modelId];
     const { count, exhausted } = usage;
     const estimatedLimit = meta.estimatedDailyLimit;
     const percentUsed = Math.min(100, Math.round((count / estimatedLimit) * 100));
 
     const row = document.createElement("label");
-    row.className = `model-row${isSelected ? " model-row-selected" : ""}${exhausted ? " model-row-disabled" : ""}`;
+    row.className = [
+        "model-row",
+        isSelected && "model-row-selected",
+        exhausted && "model-row-disabled",
+        isActive && !isSelected && "model-row-active", // only add the extra highlight when it's not already highlighted as pinned/selected
+    ]
+        .filter(Boolean)
+        .join(" ");
 
     const radio = document.createElement("input");
     radio.type = "radio";
@@ -141,6 +160,12 @@ function buildModelRow(modelId, usage, isSelected) {
     const name = document.createElement("div");
     name.className = "model-row-name";
     name.textContent = meta.displayName;
+    if (isActive) {
+        const activeTag = document.createElement("span");
+        activeTag.className = "model-row-tag model-row-tag-active";
+        activeTag.textContent = "Active now";
+        name.appendChild(activeTag);
+    }
     if (isSelected) {
         const tag = document.createElement("span");
         tag.className = "model-row-tag";

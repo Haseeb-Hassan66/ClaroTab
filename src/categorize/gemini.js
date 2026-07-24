@@ -17,7 +17,7 @@ function endpointFor(model) {
 //  2. Among the rest, models NOT already known to be exhausted go before
 //     ones that are -- avoids wasting a request re-confirming something
 //     we already have real (429-based) evidence about.
-async function getOrderedModels() {
+export async function getOrderedModels() {
     const [usageMap, preferredModel] = await Promise.all([getUsageMap(), getPreferredModel()]);
 
     const notExhausted = MODEL_FALLBACK_CHAIN.filter((m) => !usageMap[m]?.exhausted);
