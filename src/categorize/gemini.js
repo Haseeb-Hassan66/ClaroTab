@@ -77,13 +77,30 @@ export async function testApiKey(apiKey) {
 /**
  * Attempts a single model. Returns a result describing whether it succeeded,
  * and if not, whether it's worth trying the next model in the chain.
+ * Never throws -- every failure mode (network, bad response, unparseable
+ * output) is caught here and turned into a structured result, so a problem
+ * with ONE model can't get mislabeled as "the whole request failed" or
+ * silently skip evaluating the rest of the fallback chain.
  */
 async function attemptModel(model, apiKey, requestBody) {
-    const response = await fetch(`${endpointFor(model)}?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: requestBody,
-    });
+    let response;
+    try {
+        response = await fetch(`${endpointFor(model)}?key=${apiKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: requestBody,
+        });
+    } catch (err) {
+        // A genuine network failure for THIS request. Let the caller move on
+        // to the next model rather than aborting the whole chain -- a single
+        // flaky request shouldn't take down every fallback option with it.
+        console.warn(`ClaroTab: network error contacting ${model}:`, err);
+        return {
+            ok: false,
+            tryNextModel: true,
+            error: { type: "network", message: "AI grouping failed — couldn't reach the network. It'll retry next time." },
+        };
+    }
 
     if (response.status === 429) {
         console.log(`ClaroTab: ${model} is rate-limited, trying the next model...`);
@@ -118,14 +135,37 @@ async function attemptModel(model, apiKey, requestBody) {
 
     await trackUsage(model, { rateLimited: false });
 
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const data = await response.json().catch(() => null);
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-        return { ok: true, categories: {} };
+        return { ok: true, categories: {} }; // empty response isn't necessarily an error worth surfacing
     }
 
+    // Not every model follows "respond with ONLY JSON, no fences" as
+    // strictly as Gemini does (Gemma in particular has been observed adding
+    // extra text around the JSON). Strip fences, then fall back to pulling
+    // out the first {...} block if a direct parse fails, before giving up
+    // on this model entirely.
     const cleaned = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(cleaned);
+    let parsed;
+    try {
+        parsed = JSON.parse(cleaned);
+    } catch {
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        if (match) {
+            try {
+                parsed = JSON.parse(match[0]);
+            } catch {
+                parsed = null;
+            }
+        }
+    }
+
+    if (!parsed || typeof parsed !== "object") {
+        console.warn(`ClaroTab: ${model} returned output that couldn't be parsed as JSON, trying the next model...`);
+        return { ok: false, tryNextModel: true, error: { type: "unknown", message: "" } };
+    }
+
     return { ok: true, categories: parsed };
 }
 
@@ -169,6 +209,10 @@ ${tabList}`;
     let lastError = null;
 
     try {
+        // Note: attemptModel() never throws -- it catches its own network/parse
+        // errors and returns a structured result. This try/catch exists only
+        // to guard getOrderedModels() (a storage read) and any other genuinely
+        // unexpected failure, not per-model issues.
         const chain = await getOrderedModels();
 
         for (const model of chain) {

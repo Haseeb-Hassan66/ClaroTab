@@ -131,8 +131,6 @@ function buildAutoRow(preferredModel, activeModel) {
 function buildModelRow(modelId, usage, isSelected, isActive) {
     const meta = MODEL_META[modelId];
     const { count, exhausted } = usage;
-    const estimatedLimit = meta.estimatedDailyLimit;
-    const percentUsed = Math.min(100, Math.round((count / estimatedLimit) * 100));
 
     const row = document.createElement("label");
     row.className = [
@@ -173,20 +171,29 @@ function buildModelRow(modelId, usage, isSelected, isActive) {
         name.appendChild(tag);
     }
 
+    // Only real, locally-observed numbers here -- no estimated denominator
+    // or percentage claim, since Google doesn't expose actual quota and an
+    // earlier version of this UI shipped estimates that turned out badly
+    // wrong in practice.
     const status = document.createElement("div");
-    status.className = exhausted ? "model-row-status status-exhausted" : "model-row-status";
-    status.textContent = exhausted
-        ? "Exhausted today — resets after midnight Pacific time"
-        : `~${count} of ~${estimatedLimit} requests used today (estimated)`;
+    status.className = "model-row-status";
 
-    const gaugeTrack = document.createElement("div");
-    gaugeTrack.className = "gauge-track";
-    const gaugeFill = document.createElement("div");
-    gaugeFill.className = `gauge-fill ${exhausted ? "gauge-exhausted" : percentUsed >= 70 ? "gauge-low" : "gauge-ok"}`;
-    gaugeFill.style.width = `${exhausted ? 100 : percentUsed}%`;
-    gaugeTrack.appendChild(gaugeFill);
+    const dot = document.createElement("span");
+    dot.className = `usage-dot ${exhausted ? "usage-dot-exhausted" : count > 0 ? "usage-dot-used" : "usage-dot-unused"}`;
 
-    info.append(name, status, gaugeTrack);
+    const label = document.createElement("span");
+    if (exhausted) {
+        status.classList.add("status-exhausted");
+        label.textContent = `Exhausted today (${count} request${count === 1 ? "" : "s"} sent) — resets after midnight Pacific time`;
+    } else if (count > 0) {
+        label.textContent = `${count} request${count === 1 ? "" : "s"} used today`;
+    } else {
+        label.textContent = "Not used today";
+    }
+
+    status.append(dot, label);
+
+    info.append(name, status);
     row.append(radio, info);
     return row;
 }

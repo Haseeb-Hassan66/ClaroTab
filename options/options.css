@@ -330,9 +330,12 @@ label {
 }
 
 .model-row-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 11.5px;
     color: var(--ink-soft);
-    margin-top: 3px;
+    margin-top: 4px;
 }
 
 .model-row-status.status-exhausted {
@@ -340,30 +343,22 @@ label {
     font-weight: 600;
 }
 
-.gauge-track {
-    width: 100%;
-    height: 5px;
-    border-radius: 3px;
+.usage-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.usage-dot-unused {
     background: var(--border);
-    margin-top: 6px;
-    overflow: hidden;
 }
 
-.gauge-fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.25s ease;
-}
-
-.gauge-fill.gauge-ok {
+.usage-dot-used {
     background: var(--success);
 }
 
-.gauge-fill.gauge-low {
-    background: #f08c00;
-}
-
-.gauge-fill.gauge-exhausted {
+.usage-dot-exhausted {
     background: var(--danger);
 }
 
