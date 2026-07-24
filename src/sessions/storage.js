@@ -2,6 +2,8 @@
 // A "session" is just a named snapshot of tab URLs/titles at a point in time,
 // stored in chrome.storage.local so it survives closing the browser entirely.
 
+import { getRestoreMode, RESTORE_MODES } from "../settings/preferences.js";
+
 const SESSIONS_KEY = "clarotab_sessions";
 
 async function loadSessions() {
@@ -58,12 +60,24 @@ export async function deleteSession(sessionId) {
 }
 
 /**
- * Reopens every tab in a session inside a fresh browser window,
- * so it doesn't get mixed in with whatever you currently have open.
+ * Reopens every tab in a session, either in a fresh window (default) or
+ * appended to the current window, based on the user's Settings preference.
  * @param {object} session
  */
 export async function restoreSession(session) {
     const urls = session.tabs.map((tab) => tab.url).filter(Boolean);
     if (urls.length === 0) return;
-    await chrome.windows.create({ url: urls });
+
+    const mode = await getRestoreMode();
+
+    if (mode === RESTORE_MODES.CURRENT_WINDOW) {
+        // Open each tab individually in the current window, in the background,
+        // so the user isn't yanked away from what they were looking at by the
+        // last tab created stealing focus.
+        for (const url of urls) {
+            await chrome.tabs.create({ url, active: false });
+        }
+    } else {
+        await chrome.windows.create({ url: urls });
+    }
 }

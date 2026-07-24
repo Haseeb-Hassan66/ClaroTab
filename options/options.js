@@ -2,6 +2,7 @@ import { getApiKey, setApiKey, clearApiKey } from "../src/settings/apiKey.js";
 import { testApiKey, getOrderedModels } from "../src/categorize/gemini.js";
 import { MODEL_FALLBACK_CHAIN, MODEL_META } from "../src/categorize/models.js";
 import { getUsageMap, getPreferredModel, setPreferredModel } from "../src/settings/modelUsage.js";
+import { getRestoreMode, setRestoreMode, RESTORE_MODES } from "../src/settings/preferences.js";
 
 const input = document.getElementById("api-key-input");
 const toggleVisibilityBtn = document.getElementById("toggle-visibility-btn");
@@ -17,6 +18,7 @@ async function init() {
     input.value = existingKey;
     updateStatusBadge(Boolean(existingKey));
     await renderModelList();
+    await renderRestoreModeOptions();
 }
 
 function updateStatusBadge(isConfigured) {
@@ -211,3 +213,57 @@ function buildModelRow(modelId, usage, isSelected, isActive) {
 }
 
 init();
+
+// --- Restore preference ---
+
+const RESTORE_MODE_OPTIONS = [
+    {
+        value: RESTORE_MODES.NEW_WINDOW,
+        title: "Open in a new window",
+        description: "Keeps the restored session visually separate from what you're currently doing.",
+    },
+    {
+        value: RESTORE_MODES.CURRENT_WINDOW,
+        title: "Add to current window",
+        description: "Opens the session's tabs alongside whatever you already have open, in the background.",
+    },
+];
+
+async function renderRestoreModeOptions() {
+    const container = document.getElementById("restore-mode-list");
+    const currentMode = await getRestoreMode();
+
+    container.innerHTML = "";
+    for (const option of RESTORE_MODE_OPTIONS) {
+        container.appendChild(buildRestoreModeRow(option, option.value === currentMode));
+    }
+}
+
+function buildRestoreModeRow(option, isSelected) {
+    const row = document.createElement("label");
+    row.className = `model-row${isSelected ? " model-row-selected" : ""}`;
+
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = "restore-mode-choice";
+    radio.checked = isSelected;
+    radio.addEventListener("change", async () => {
+        await setRestoreMode(option.value);
+        await renderRestoreModeOptions();
+    });
+
+    const info = document.createElement("div");
+    info.className = "model-row-info";
+
+    const title = document.createElement("div");
+    title.className = "model-row-name";
+    title.textContent = option.title;
+
+    const description = document.createElement("div");
+    description.className = "model-row-status";
+    description.textContent = option.description;
+
+    info.append(title, description);
+    row.append(radio, info);
+    return row;
+}
