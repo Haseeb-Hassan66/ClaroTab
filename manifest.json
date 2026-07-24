@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ClaroTab",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Automatically groups, cleans up, and helps you restore your browser tabs.",
   "permissions": [
     "tabs",

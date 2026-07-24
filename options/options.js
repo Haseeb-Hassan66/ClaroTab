@@ -181,17 +181,29 @@ function buildModelRow(modelId, usage, isSelected, isActive) {
     const dot = document.createElement("span");
     dot.className = `usage-dot ${exhausted ? "usage-dot-exhausted" : count > 0 ? "usage-dot-used" : "usage-dot-unused"}`;
 
+    // The request count gets its own badge, always visible regardless of
+    // state -- previously it was buried inside the exhausted-state sentence,
+    // easy to miss. Now it's equally prominent whether the model is fresh,
+    // in use, or exhausted.
+    const countBadge = document.createElement("span");
+    countBadge.className = `usage-count ${exhausted ? "usage-count-exhausted" : ""}`;
+    countBadge.textContent = `${count} request${count === 1 ? "" : "s"}`;
+
     const label = document.createElement("span");
     if (exhausted) {
         status.classList.add("status-exhausted");
-        label.textContent = `Exhausted today (${count} request${count === 1 ? "" : "s"} sent) — resets after midnight Pacific time`;
+        label.textContent = "Exhausted today — resets after midnight Pacific time";
     } else if (count > 0) {
-        label.textContent = `${count} request${count === 1 ? "" : "s"} used today`;
+        label.textContent = "used today";
     } else {
         label.textContent = "Not used today";
     }
 
-    status.append(dot, label);
+    status.append(dot);
+    if (count > 0) {
+        status.appendChild(countBadge);
+    }
+    status.appendChild(label);
 
     info.append(name, status);
     row.append(radio, info);

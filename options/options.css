@@ -362,6 +362,21 @@ label {
     background: var(--danger);
 }
 
+.usage-count {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--border);
+    padding: 1px 7px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.usage-count-exhausted {
+    color: var(--danger);
+    background: var(--danger-soft);
+}
+
 @media (prefers-reduced-motion: reduce) {
     .btn {
         transition: none;
