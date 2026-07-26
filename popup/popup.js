@@ -203,6 +203,7 @@ function showAiBanner(variant, message, { actionLabel, onAction } = {}) {
 
     banner.className = `variant-${variant}`; // clears any previous variant class
     icon.innerHTML = variant === "info" ? UI_ICONS.info : UI_ICONS.alert;
+    icon.setAttribute("aria-hidden", "true");
     text.textContent = message;
 
     if (actionLabel && onAction) {
@@ -298,11 +299,16 @@ function buildGroupElement(category, tabs) {
     header.tabIndex = 0;
     header.setAttribute("role", "button");
     header.setAttribute("aria-expanded", "false");
+    // Explicit label rather than relying on the browser to concatenate text
+    // from child elements -- more reliable across screen readers, and reads
+    // more naturally than "Coding5" would.
+    header.setAttribute("aria-label", `${category}, ${tabs.length} tab${tabs.length === 1 ? "" : "s"}`);
 
     const badge = document.createElement("span");
     badge.className = "cat-badge";
     badge.style.background = `var(--cat-${slug}, var(--cat-other))`;
     badge.innerHTML = getCategoryIcon(category);
+    badge.setAttribute("aria-hidden", "true"); // decorative -- the aria-label above already conveys the category
 
     const title = document.createElement("span");
     title.className = "group-title";
@@ -315,6 +321,7 @@ function buildGroupElement(category, tabs) {
     const chevron = document.createElement("span");
     chevron.className = "chevron";
     chevron.innerHTML = UI_ICONS.chevron;
+    chevron.setAttribute("aria-hidden", "true"); // decorative -- expand/collapse state is already conveyed via aria-expanded
 
     header.append(badge, title, count, chevron);
 
@@ -352,6 +359,8 @@ function buildTabElement(tab) {
     item.className = "tab-item";
     item.tabIndex = 0;
     item.title = tab.url;
+    item.setAttribute("role", "button");
+    item.setAttribute("aria-label", `Switch to tab: ${tab.title || tab.url}`);
 
     const favicon = document.createElement("img");
     favicon.className = "tab-favicon";
@@ -391,7 +400,10 @@ function buildTabElement(tab) {
     };
     item.addEventListener("click", activate);
     item.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") activate();
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault(); // stop Space from scrolling the popup
+            activate();
+        }
     });
 
     return item;

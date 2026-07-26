@@ -182,6 +182,7 @@ function buildModelRow(modelId, usage, isSelected, isActive) {
 
     const dot = document.createElement("span");
     dot.className = `usage-dot ${exhausted ? "usage-dot-exhausted" : count > 0 ? "usage-dot-used" : "usage-dot-unused"}`;
+    dot.setAttribute("aria-hidden", "true");
 
     // The request count gets its own badge, always visible regardless of
     // state -- previously it was buried inside the exhausted-state sentence,
