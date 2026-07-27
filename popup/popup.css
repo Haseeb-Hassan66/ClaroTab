@@ -1,51 +1,90 @@
 :root {
-  --bg: #f7f8fb;
-  --surface: #ffffff;
-  --ink: #191d28;
-  --ink-soft: #5b6270;
-  --border: #e6e8ee;
-  --accent: #3457d5;
-  --accent-soft: #eaefff;
-  --radius: 10px;
+  /* --- Base surfaces --- */
+  /* Deep near-black navy base -- the gradient-mesh blobs sit on top of this. */
+  --bg: #0a0a12;
+  /* Opaque dark card surface. Deliberately NOT translucent yet -- the
+     frosted "liquid glass" treatment (backdrop-filter blur) is applied
+     per-component in later phases, once there's real content to frost
+     over. Keeping surfaces opaque for now keeps everything legible while
+     the rest of the redesign is still in progress. */
+  --surface: #15161f;
+  --surface-raised: #1b1c28;
+  /* one step lighter, for stacked/hover states */
 
-  /* Category color-coding -- the signature element. Each category gets
-     a consistent color used for its badge background. */
-  --cat-coding: #6c5ce7;
-  --cat-shopping: #e8590c;
-  --cat-entertainment: #e64980;
-  --cat-research: #0ca678;
-  --cat-university: #f08c00;
-  --cat-social-media: #1971c2;
-  --cat-work-productivity: #2f9e44;
-  --cat-email: #495057;
-  --cat-news: #862e9c;
-  --cat-other: #adb5bd;
+  /* --- Text --- */
+  --ink: #f3f2f8;
+  --ink-soft: #a7a5c2;
+
+  /* --- Borders --- */
+  --border: rgba(255, 255, 255, 0.1);
+
+  /* --- Accent --- */
+  /* Brighter than the old light-theme accent on purpose -- a saturated
+     blue-violet needs more luminance to read clearly against a dark base. */
+  --accent: #8b7cff;
+  --accent-soft: rgba(139, 124, 255, 0.16);
+
+  /* --- Status colors (dark-tuned for contrast) --- */
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.14);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.14);
+  --danger: #ff6b6b;
+  --danger-soft: rgba(255, 107, 107, 0.14);
+
+  --radius: 14px;
+
+  /* --- Glass panel system --- */
+  /* Defined now, applied to real components starting in Phase 3+. A
+     "liquid glass" surface is a translucent light overlay + backdrop blur
+     sitting on top of the gradient-mesh background, with a soft inner
+     border to catch light and a colored ambient shadow. */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-hover: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-blur: 20px;
+  --glass-shadow: 0 8px 32px rgba(20, 10, 60, 0.35);
+  --glass-radius: 16px;
+
+  /* --- Category color-coding --- */
+  /* Re-tuned from the old light-theme palette: several of the originals
+     (e.g. the near-black gray used for Email) would have nearly vanished
+     against a dark background, so every color here was re-checked for
+     contrast against --bg and --surface, not just carried over as-is. */
+  --cat-coding: #a78bfa;
+  --cat-shopping: #ff9f5a;
+  --cat-entertainment: #ff7aa8;
+  --cat-research: #34d399;
+  --cat-university: #fbbf24;
+  --cat-social-media: #60a5fa;
+  --cat-work-productivity: #4ade80;
+  --cat-email: #c7c5dd;
+  --cat-news: #d18ff0;
+  --cat-other: #8886a3;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #14161c;
-    --surface: #1c1f27;
-    --ink: #eceef2;
-    --ink-soft: #9298a5;
-    --border: #2a2e38;
-    --accent: #6d8bff;
-    --accent-soft: #22284a;
-  }
-}
-
-* {
-  box-sizing: border-box;
-}
-
+/* The gradient-mesh background -- pure layered CSS radial-gradients, no
+   filter/blur and no DOM elements needed. Soft, fading-to-transparent
+   stops create the blurred-blob look directly, which is far cheaper to
+   render than actual blurred pseudo-elements would be -- important in a
+   small popup that needs to open instantly. Motion/animation on this is
+   deliberately deferred to the dedicated animation-polish phase, so this
+   step stays isolated to "what does the base look like at rest."
+*/
 body {
   width: 360px;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(52, 87, 213, 0.06), transparent 55%),
+    radial-gradient(ellipse 140% 90% at 8% -10%, rgba(99, 91, 255, 0.55), transparent 60%),
+    radial-gradient(ellipse 120% 100% at 105% 115%, rgba(158, 145, 235, 0.4), transparent 55%),
+    radial-gradient(ellipse 90% 70% at 90% -5%, rgba(70, 60, 200, 0.3), transparent 60%),
     var(--bg);
   color: var(--ink);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 button,
@@ -58,7 +97,7 @@ input {
 header {
   padding: 14px 16px 12px;
   background: var(--surface);
-  box-shadow: 0 1px 0 var(--border), 0 4px 14px rgba(20, 22, 30, 0.04);
+  box-shadow: 0 1px 0 var(--border), 0 4px 14px rgba(0, 0, 0, 0.35);
   position: relative;
   z-index: 1;
 }
@@ -153,7 +192,7 @@ h1 {
 .nav-btn.active {
   background: var(--surface);
   color: var(--accent);
-  box-shadow: 0 1px 3px rgba(20, 22, 30, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
 }
 
 .nav-btn:focus-visible {
@@ -189,25 +228,13 @@ h1 {
 }
 
 #ai-banner.variant-warning {
-  background: #fff4e0;
-  color: #b25a00;
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 #ai-banner.variant-error {
-  background: #ffe9e9;
-  color: #c0281c;
-}
-
-@media (prefers-color-scheme: dark) {
-  #ai-banner.variant-warning {
-    background: #3a2a10;
-    color: #ffb454;
-  }
-
-  #ai-banner.variant-error {
-    background: #3a1414;
-    color: #ff8a80;
-  }
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .ai-banner-icon {
@@ -237,7 +264,7 @@ h1 {
   font-weight: 700;
   color: inherit;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(20, 22, 30, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
 }
 
 .ai-banner-action:hover {
@@ -362,7 +389,6 @@ h1 {
   margin-bottom: 4px;
   border-radius: var(--radius);
   overflow: hidden;
-  animation: itemIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .group-header {
@@ -378,7 +404,7 @@ h1 {
 
 .group-header:hover {
   background: var(--surface);
-  box-shadow: 0 2px 8px rgba(20, 22, 30, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .group-header:active {
@@ -399,7 +425,7 @@ h1 {
   align-items: center;
   justify-content: center;
   color: white;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 3px rgba(20, 22, 30, 0.15);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
 .cat-badge svg {
@@ -562,12 +588,11 @@ h1 {
   border-radius: var(--radius);
   margin-bottom: 3px;
   transition: background 0.15s ease, box-shadow 0.15s ease;
-  animation: itemIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .session-item:hover {
   background: var(--surface);
-  box-shadow: 0 2px 8px rgba(20, 22, 30, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .session-info {
@@ -653,7 +678,7 @@ h1 {
 .tab-item:hover,
 .session-item:hover {
   background: var(--surface);
-  box-shadow: 0 1px 6px rgba(20, 22, 30, 0.06);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
 }
 
 .tab-item:active {
@@ -695,11 +720,11 @@ h1 {
 }
 
 .group {
-  animation: rise-in 0.22s ease both;
+  animation: rise-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .session-item {
-  animation: rise-in 0.22s ease both;
+  animation: rise-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* --- Confirm modal --- */
