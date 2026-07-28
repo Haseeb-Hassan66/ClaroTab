@@ -526,6 +526,20 @@ function setupSaveSession() {
     button.addEventListener("click", async () => {
         if (currentTabs.length === 0) return;
 
+        // If the name field is blank, flash an error on the input so the user
+        // knows it will be auto-named -- then proceed with saving after a short
+        // pause so the animation is visible before the UI changes to "Saving…".
+        if (!input.value.trim()) {
+            input.classList.remove("input-error");
+            // Force a reflow so removing+re-adding the class re-triggers the animation.
+            void input.offsetWidth;
+            input.classList.add("input-error");
+            input.focus();
+            // Let the shake play out, then clear the error class automatically.
+            input.addEventListener("animationend", () => input.classList.remove("input-error"), { once: true });
+            return;
+        }
+
         button.disabled = true;
         button.textContent = "Saving…";
         try {

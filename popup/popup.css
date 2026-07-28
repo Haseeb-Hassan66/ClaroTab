@@ -552,6 +552,21 @@ h1 {
   outline-offset: 1px;
 }
 
+/* Red border flash when Save is clicked with no name. */
+#session-name-input.input-error {
+  border-color: var(--danger);
+  outline: 2px solid var(--danger);
+  outline-offset: 1px;
+  animation: input-shake 0.3s ease;
+}
+
+@keyframes input-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  60%       { transform: translateX(5px); }
+  80%       { transform: translateX(-3px); }
+}
+
 #save-session-btn {
   padding: 7px 12px;
   background: var(--accent);
@@ -840,7 +855,8 @@ h1 {
   #modal-overlay,
   #modal,
   .brand-mark.loading,
-  .group {
+  .group,
+  #session-name-input.input-error {
     animation: none;
     transition: none;
   }
