@@ -2,8 +2,7 @@
 
 import { getAllTabs } from "../src/tabs/query.js";
 import { categorizeTab } from "../src/categorize/rules.js";
-import { countClosableDuplicates, closeDuplicateTabs } from "../src/tabs/duplicates.js";
-import { normalizeUrl } from "../src/tabs/duplicates.js";
+import { countClosableDuplicates, closeDuplicateTabs, normalizeUrl } from "../src/tabs/duplicates.js";
 import { categorizeTabsWithGemini } from "../src/categorize/gemini.js";
 import { getCachedCategoriesMap, setCachedCategories } from "../src/categorize/cache.js";
 import { getApiKey } from "../src/settings/apiKey.js";
