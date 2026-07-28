@@ -184,8 +184,15 @@ export async function categorizeTabsWithGemini(tabs, apiKey) {
     }
 
     const assignableCategories = CATEGORIES.filter((c) => c !== "Other");
+
+    // Strip characters that could break out of the prompt template or inject
+    // new instructions (newlines split the structured list; quotes and backticks
+    // can escape the field delimiters). Titles/URLs are capped at 200 chars --
+    // anything beyond that isn't meaningful for categorization anyway.
+    const sanitize = (str) => (str || "").replace(/[\r\n"`]/g, " ").slice(0, 200);
+
     const tabList = tabs
-        .map((tab) => `- id ${tab.id}: title="${tab.title}" url="${tab.url}"`)
+        .map((tab) => `- id ${tab.id}: title="${sanitize(tab.title)}" url="${sanitize(tab.url)}"`)
         .join("\n");
 
     const prompt = `You are classifying browser tabs into categories for a tab-organizing extension.
