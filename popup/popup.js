@@ -523,22 +523,34 @@ function setupSaveSession() {
     const input = document.getElementById("session-name-input");
     const button = document.getElementById("save-session-btn");
 
+    // Clear the error state the moment the user starts typing -- the red
+    // highlight should feel like a prompt, not a permanent label.
+    input.addEventListener("input", () => input.classList.remove("input-error"));
+
     button.addEventListener("click", async () => {
         if (currentTabs.length === 0) return;
 
-        // If the name field is blank, flash an error on the input so the user
-        // knows it will be auto-named -- then proceed with saving after a short
-        // pause so the animation is visible before the UI changes to "Saving…".
+        // If the name field is blank, shake and highlight the input so the
+        // user knows a name is required, then bail out.
         if (!input.value.trim()) {
             input.classList.remove("input-error");
-            // Force a reflow so removing+re-adding the class re-triggers the animation.
+            // Force a reflow so removing+re-adding the class always re-triggers
+            // the shake animation, even if it was already applied.
             void input.offsetWidth;
             input.classList.add("input-error");
             input.focus();
-            // Let the shake play out, then clear the error class automatically.
-            input.addEventListener("animationend", () => input.classList.remove("input-error"), { once: true });
+            // Clear the error class after the shake animation (0.3s).
+            // The setTimeout fallback ensures it always clears even when the
+            // shake animation is disabled by prefers-reduced-motion, where
+            // animationend never fires.
+            const clearError = () => input.classList.remove("input-error");
+            input.addEventListener("animationend", clearError, { once: true });
+            setTimeout(clearError, 400);
             return;
         }
+
+        // Defensively clear any lingering error state before saving.
+        input.classList.remove("input-error");
 
         button.disabled = true;
         button.textContent = "Saving…";
@@ -561,6 +573,7 @@ function setupSaveSession() {
         if (e.key === "Enter") button.click();
     });
 }
+
 
 async function renderSessions() {
     const container = document.getElementById("session-list");

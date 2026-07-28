@@ -552,11 +552,13 @@ h1 {
   outline-offset: 1px;
 }
 
-/* Red border flash when Save is clicked with no name. */
+/* Danger state when Save is clicked with no name.
+   Uses --danger-soft background + --danger border to match the same
+   error color language the AI banner uses (variant-error), so it
+   feels like part of the design rather than a browser-default alert. */
 #session-name-input.input-error {
   border-color: var(--danger);
-  outline: 2px solid var(--danger);
-  outline-offset: 1px;
+  background: var(--danger-soft);
   animation: input-shake 0.3s ease;
 }
 
