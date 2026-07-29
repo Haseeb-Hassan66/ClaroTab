@@ -140,10 +140,18 @@ header {
 }
 
 .brand-mark {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  background: var(--accent);
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  /* circular -- deliberately distinct from the rounded-square
+                          badges/buttons used everywhere else, so it reads as
+                          "the logo," not just another UI element */
+  background: linear-gradient(135deg, #beabff 0%, #8b7cff 45%, #4433a8 100%);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    /* glass specular highlight */
+    0 0 8px rgba(139, 124, 255, 0.55);
+  /* soft ambient glow, echoes the icon's shadow */
   flex-shrink: 0;
 }
 
@@ -552,23 +560,6 @@ h1 {
   outline-offset: 1px;
 }
 
-/* Danger state when Save is clicked with no name.
-   Uses --danger-soft background + --danger border to match the same
-   error color language the AI banner uses (variant-error), so it
-   feels like part of the design rather than a browser-default alert. */
-#session-name-input.input-error {
-  border-color: var(--danger);
-  background: var(--danger-soft);
-  animation: input-shake 0.3s ease;
-}
-
-@keyframes input-shake {
-  0%, 100% { transform: translateX(0); }
-  20%       { transform: translateX(-5px); }
-  60%       { transform: translateX(5px); }
-  80%       { transform: translateX(-3px); }
-}
-
 #save-session-btn {
   padding: 7px 12px;
   background: var(--accent);
@@ -857,8 +848,7 @@ h1 {
   #modal-overlay,
   #modal,
   .brand-mark.loading,
-  .group,
-  #session-name-input.input-error {
+  .group {
     animation: none;
     transition: none;
   }
