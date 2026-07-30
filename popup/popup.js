@@ -2,7 +2,8 @@
 
 import { getAllTabs } from "../src/tabs/query.js";
 import { categorizeTab } from "../src/categorize/rules.js";
-import { countClosableDuplicates, closeDuplicateTabs, normalizeUrl } from "../src/tabs/duplicates.js";
+import { countClosableDuplicates, closeDuplicateTabs } from "../src/tabs/duplicates.js";
+import { normalizeUrl } from "../src/tabs/duplicates.js";
 import { categorizeTabsWithGemini } from "../src/categorize/gemini.js";
 import { getCachedCategoriesMap, setCachedCategories } from "../src/categorize/cache.js";
 import { getApiKey } from "../src/settings/apiKey.js";
@@ -16,6 +17,13 @@ let currentTabs = [];
 async function init() {
     const brandMark = document.querySelector(".brand-mark");
     brandMark.classList.add("loading");
+
+    // Real work here often finishes in just a few milliseconds (especially
+    // once AI results are cached), which is faster than the pulse animation
+    // can paint even a single visible frame. This guarantees the pulse is
+    // shown for at least half a second, so it's an indicator people can
+    // actually perceive rather than invisible most of the time.
+    const minPulseDuration = new Promise((resolve) => setTimeout(resolve, 500));
 
     try {
         const tabs = await getAllTabs();
@@ -45,6 +53,7 @@ async function init() {
         console.error("ClaroTab: failed to load tabs:", err);
         renderErrorState();
     } finally {
+        await minPulseDuration;
         brandMark.classList.remove("loading");
     }
 }
@@ -523,34 +532,8 @@ function setupSaveSession() {
     const input = document.getElementById("session-name-input");
     const button = document.getElementById("save-session-btn");
 
-    // Clear the error state the moment the user starts typing -- the red
-    // highlight should feel like a prompt, not a permanent label.
-    input.addEventListener("input", () => input.classList.remove("input-error"));
-
     button.addEventListener("click", async () => {
         if (currentTabs.length === 0) return;
-
-        // If the name field is blank, shake and highlight the input so the
-        // user knows a name is required, then bail out.
-        if (!input.value.trim()) {
-            input.classList.remove("input-error");
-            // Force a reflow so removing+re-adding the class always re-triggers
-            // the shake animation, even if it was already applied.
-            void input.offsetWidth;
-            input.classList.add("input-error");
-            input.focus();
-            // Clear the error class after the shake animation (0.3s).
-            // The setTimeout fallback ensures it always clears even when the
-            // shake animation is disabled by prefers-reduced-motion, where
-            // animationend never fires.
-            const clearError = () => input.classList.remove("input-error");
-            input.addEventListener("animationend", clearError, { once: true });
-            setTimeout(clearError, 400);
-            return;
-        }
-
-        // Defensively clear any lingering error state before saving.
-        input.classList.remove("input-error");
 
         button.disabled = true;
         button.textContent = "Saving…";
@@ -573,7 +556,6 @@ function setupSaveSession() {
         if (e.key === "Enter") button.click();
     });
 }
-
 
 async function renderSessions() {
     const container = document.getElementById("session-list");
