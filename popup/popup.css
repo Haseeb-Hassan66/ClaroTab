@@ -61,6 +61,24 @@
   --cat-email: #c7c5dd;
   --cat-news: #d18ff0;
   --cat-other: #8886a3;
+
+  /* --- Category icon colors --- */
+  /* A plain white icon on every badge looked broken in practice: several
+     of the category colors above are light/bright pastels (chosen for
+     legibility against the dark background), and white-on-light-yellow or
+     white-on-pale-lavender is nearly unreadable. Each value below was
+     picked by computing relative luminance for its matching --cat-* color
+     (WCAG-style formula) rather than eyeballed, so it's not guesswork. */
+  --cat-coding-icon: white;
+  --cat-shopping-icon: #1b1626;
+  --cat-entertainment-icon: #1b1626;
+  --cat-research-icon: #1b1626;
+  --cat-university-icon: #1b1626;
+  --cat-social-media-icon: #1b1626;
+  --cat-work-productivity-icon: #1b1626;
+  --cat-email-icon: #1b1626;
+  --cat-news-icon: #1b1626;
+  --cat-other-icon: white;
 }
 
 /* The gradient-mesh background -- pure layered CSS radial-gradients, no
@@ -404,9 +422,14 @@ h1 {
 }
 
 .group {
-  margin-bottom: 4px;
-  border-radius: var(--radius);
+  margin-bottom: 8px;
+  border-radius: var(--glass-radius);
   overflow: hidden;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .group-header {
@@ -415,14 +438,13 @@ h1 {
   gap: 9px;
   padding: 7px 6px;
   cursor: pointer;
-  border-radius: var(--radius);
+  border-radius: 10px;
   user-select: none;
-  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
 .group-header:hover {
-  background: var(--surface);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  background: var(--glass-bg-hover);
 }
 
 .group-header:active {
@@ -472,7 +494,7 @@ h1 {
 .chevron {
   display: inline-flex;
   color: var(--ink-soft);
-  transition: transform 0.18s ease;
+  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
 }
 
@@ -486,11 +508,13 @@ h1 {
 }
 
 /* Smooth collapse/expand using the CSS grid-rows trick -- animates to/from
-   "auto" height without needing JS to measure pixel heights. */
+   "auto" height without needing JS to measure pixel heights. A fade is
+   layered on top so tabs dissolve in/out rather than hard-cutting the
+   instant the height animation finishes, which reads as more liquid. */
 .group-body {
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows 0.2s ease;
+  transition: grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .group.collapsed .group-body {
@@ -500,6 +524,11 @@ h1 {
 .group-body>.tab-list {
   min-height: 0;
   overflow: hidden;
+  transition: opacity 0.18s ease;
+}
+
+.group.collapsed .group-body>.tab-list {
+  opacity: 0;
 }
 
 .tab-list {
@@ -520,7 +549,7 @@ h1 {
 }
 
 .tab-item:hover {
-  background: var(--surface);
+  background: var(--glass-bg-hover);
 }
 
 .tab-item:active {

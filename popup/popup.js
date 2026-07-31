@@ -315,6 +315,7 @@ function buildGroupElement(category, tabs) {
     const badge = document.createElement("span");
     badge.className = "cat-badge";
     badge.style.background = `var(--cat-${slug}, var(--cat-other))`;
+    badge.style.color = `var(--cat-${slug}-icon, white)`;
     badge.innerHTML = getCategoryIcon(category);
     badge.setAttribute("aria-hidden", "true"); // decorative -- the aria-label above already conveys the category
 
