@@ -250,8 +250,13 @@ h1 {
   gap: 8px;
   margin: 10px 16px 0;
   padding: 8px 10px;
-  border-radius: var(--radius);
-  animation: rise-in 0.2s ease both;
+  border-radius: var(--glass-radius);
+  border: 1px solid transparent;
+  /* color set per-variant below */
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: rise-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 #ai-banner.hidden {
@@ -260,16 +265,19 @@ h1 {
 
 #ai-banner.variant-info {
   background: var(--accent-soft);
+  border-color: rgba(139, 124, 255, 0.35);
   color: var(--accent);
 }
 
 #ai-banner.variant-warning {
   background: var(--warning-soft);
+  border-color: rgba(251, 191, 36, 0.35);
   color: var(--warning);
 }
 
 #ai-banner.variant-error {
   background: var(--danger-soft);
+  border-color: rgba(255, 107, 107, 0.35);
   color: var(--danger);
 }
 
@@ -292,19 +300,24 @@ h1 {
 
 .ai-banner-action {
   flex-shrink: 0;
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.14);
   border: none;
-  border-radius: 6px;
+  border-radius: 7px;
   padding: 4px 9px;
   font-size: 11px;
   font-weight: 700;
   color: inherit;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transition: background 0.15s ease, transform 0.08s ease;
 }
 
 .ai-banner-action:hover {
-  filter: brightness(0.95);
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.ai-banner-action:active {
+  transform: scale(0.94);
 }
 
 .ai-banner-action.hidden {
@@ -322,19 +335,23 @@ h1 {
   gap: 10px;
   padding: 9px 10px;
   background: var(--accent-soft);
-  border: none;
-  border-radius: var(--radius);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid rgba(139, 124, 255, 0.28);
+  border-radius: var(--glass-radius);
   cursor: pointer;
   text-align: left;
-  transition: filter 0.12s ease, transform 0.06s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease;
 }
 
 #close-duplicates-btn:hover {
-  filter: brightness(0.97);
+  background: rgba(139, 124, 255, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 16px rgba(139, 124, 255, 0.25);
 }
 
 #close-duplicates-btn:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
 }
 
 #close-duplicates-btn:disabled {
@@ -349,9 +366,10 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 7px;
-  background: var(--surface);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
   color: var(--accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
 .action-icon svg {
@@ -389,11 +407,17 @@ h1 {
   font-size: 12px;
   font-weight: 650;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  transition: background 0.15s ease, transform 0.08s ease;
 }
 
 #toggle-all-btn:hover {
-  text-decoration: underline;
+  background: var(--glass-bg-hover);
+}
+
+#toggle-all-btn:active {
+  transform: scale(0.94);
 }
 
 /* --- Groups list --- */
@@ -887,7 +911,10 @@ h1 {
   #modal-overlay,
   #modal,
   .brand-mark.loading,
-  .group {
+  .group,
+  .ai-banner-action,
+  #toggle-all-btn,
+  #ai-banner {
     animation: none;
     transition: none;
   }
