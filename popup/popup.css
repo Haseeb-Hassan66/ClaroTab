@@ -623,6 +623,22 @@ h1 {
   outline-offset: 1px;
 }
 
+/* Danger state when Save is clicked with no name.
+   Uses --danger-soft background + --danger border to match the same
+   error color language the AI banner uses (variant-error). */
+#session-name-input.input-error {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  animation: input-shake 0.3s ease;
+}
+
+@keyframes input-shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-5px); }
+  60%       { transform: translateX(5px); }
+  80%       { transform: translateX(-3px); }
+}
+
 #save-session-btn {
   padding: 7px 12px;
   background: var(--accent);
@@ -914,7 +930,8 @@ h1 {
   .group,
   .ai-banner-action,
   #toggle-all-btn,
-  #ai-banner {
+  #ai-banner,
+  #session-name-input.input-error {
     animation: none;
     transition: none;
   }
