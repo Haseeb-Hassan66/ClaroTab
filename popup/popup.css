@@ -825,7 +825,7 @@ h1 {
 #modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 17, 24, 0.45);
+  background: rgba(10, 10, 18, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -851,10 +851,13 @@ h1 {
 
 #modal {
   width: 280px;
-  background: var(--surface);
-  border-radius: 12px;
+  background: var(--glass-bg-hover);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
   padding: 16px;
-  box-shadow: 0 12px 28px rgba(15, 17, 24, 0.25);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   animation: modal-pop-in 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.2);
 }
 
@@ -900,22 +903,24 @@ h1 {
 }
 
 .modal-btn-secondary {
-  background: var(--bg);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--ink);
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-border);
 }
 
 .modal-btn-secondary:hover {
-  background: var(--border);
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .modal-btn-danger {
   background: #e03131;
   color: white;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .modal-btn-danger:hover {
   filter: brightness(1.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 14px rgba(224, 49, 49, 0.4);
 }
 
 @media (prefers-reduced-motion: reduce) {
