@@ -12,13 +12,10 @@ export function normalizeUrl(url) {
     try {
         const parsed = new URL(url);
         parsed.hash = "";
-        let normalized = parsed.toString();
-        if (normalized.endsWith("/") && parsed.pathname === "/") {
-            // keep bare domain URLs as-is (e.g. "https://github.com/")
-        } else if (normalized.endsWith("/")) {
-            normalized = normalized.slice(0, -1);
+        if (parsed.pathname !== "/" && parsed.pathname.endsWith("/")) {
+            parsed.pathname = parsed.pathname.slice(0, -1);
         }
-        return normalized;
+        return parsed.toString();
     } catch {
         return url;
     }
