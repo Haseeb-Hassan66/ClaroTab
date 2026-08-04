@@ -1,76 +1,101 @@
 :root {
-    --bg: #f7f8fb;
-    --surface: #ffffff;
-    --ink: #191d28;
-    --ink-soft: #5b6270;
-    --border: #e6e8ee;
-    --accent: #3457d5;
-    --accent-soft: #eaefff;
-    --success: #0ca678;
-    --success-soft: #e6fcf5;
-    --danger: #e03131;
-    --danger-soft: #fff0f0;
-    --radius: 10px;
-}
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #14161c;
-        --surface: #1c1f27;
-        --ink: #eceef2;
-        --ink-soft: #9298a5;
-        --border: #2a2e38;
-        --accent: #6d8bff;
-        --accent-soft: #22284a;
-        --success-soft: #0f2b24;
-        --danger-soft: #2e1616;
-    }
+    /* Exact same tokens as popup.css -- one design system, not two */
+    --bg: #0a0a12;
+    --surface: #15161f;
+    --ink: #f3f2f8;
+    --ink-soft: #a7a5c2;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #8b7cff;
+    --accent-soft: rgba(139, 124, 255, 0.16);
+    --success: #34d399;
+    --success-soft: rgba(52, 211, 153, 0.14);
+    --warning: #fbbf24;
+    --warning-soft: rgba(251, 191, 36, 0.14);
+    --danger: #ff6b6b;
+    --danger-soft: rgba(255, 107, 107, 0.14);
+    --glass-bg: rgba(255, 255, 255, 0.06);
+    --glass-bg-hover: rgba(255, 255, 255, 0.09);
+    --glass-border: rgba(255, 255, 255, 0.14);
+    --glass-blur: 20px;
+    --glass-shadow: 0 8px 32px rgba(20, 10, 60, 0.35);
+    --glass-radius: 16px;
+    --radius: 14px;
 }
 
 * {
     box-sizing: border-box;
 }
 
+/* Full-page gradient mesh -- same blobs as the popup, stretched across
+   a full browser tab instead of a 360px popup. Fixed so it stays in place
+   while the user scrolls through settings. */
 body {
     margin: 0;
-    background: var(--bg);
+    min-height: 100vh;
+    background:
+        radial-gradient(ellipse 120% 60% at 5% 0%, rgba(99, 91, 255, 0.5), transparent 55%),
+        radial-gradient(ellipse 100% 80% at 100% 100%, rgba(158, 145, 235, 0.38), transparent 55%),
+        radial-gradient(ellipse 80% 60% at 95% 5%, rgba(70, 60, 200, 0.28), transparent 55%),
+        var(--bg);
+    background-attachment: fixed;
     color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
 }
 
-main {
-    max-width: 520px;
-    margin: 0 auto;
-    padding: 40px 24px 60px;
+.page-mesh {
+    /* An extra low-opacity violet blob in the mid-page area, so the mesh
+     doesn't feel thin on a long scrollable settings page. */
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 70% 50% at 60% 55%, rgba(120, 100, 255, 0.12), transparent 65%);
+    z-index: 0;
 }
+
+main {
+    position: relative;
+    z-index: 1;
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 48px 24px 72px;
+}
+
+/* --- Brand header --- */
 
 .brand {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 28px;
+    margin-bottom: 32px;
 }
 
 .brand-mark {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
     background: linear-gradient(135deg, #beabff 0%, #8b7cff 45%, #4433a8 100%);
     box-shadow:
         inset 0 1px 1px rgba(255, 255, 255, 0.45),
-        0 0 8px rgba(139, 124, 255, 0.55);
+        0 0 10px rgba(139, 124, 255, 0.6);
+    flex-shrink: 0;
 }
 
 h1 {
-    font-size: 19px;
+    font-size: 20px;
     font-weight: 700;
+    letter-spacing: -0.02em;
     margin: 0;
 }
 
+/* --- Cards as glass panels --- */
+
 .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--glass-radius);
+    box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     padding: 22px 24px;
     margin-bottom: 16px;
 }
@@ -79,6 +104,7 @@ h2 {
     font-size: 15px;
     font-weight: 700;
     margin: 0 0 8px;
+    color: var(--ink);
 }
 
 .description {
@@ -88,35 +114,46 @@ h2 {
     margin: 0 0 16px;
 }
 
+/* --- Status badge --- */
+
 .status-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 12px;
     font-weight: 650;
-    padding: 4px 10px;
+    padding: 5px 12px;
     border-radius: 20px;
     margin-bottom: 18px;
+    border: 1px solid transparent;
 }
 
 .status-unknown {
-    background: var(--border);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--glass-border);
     color: var(--ink-soft);
 }
 
 .status-configured {
     background: var(--success-soft);
+    border-color: rgba(52, 211, 153, 0.3);
     color: var(--success);
 }
 
 .status-not-configured {
-    background: var(--border);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--glass-border);
     color: var(--ink-soft);
 }
+
+/* --- API key input row --- */
 
 label {
     display: block;
     font-size: 12.5px;
     font-weight: 650;
     margin-bottom: 6px;
+    color: var(--ink-soft);
 }
 
 .input-row {
@@ -128,12 +165,20 @@ label {
     flex: 1;
     min-width: 0;
     padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
     font-size: 13px;
     font-family: ui-monospace, "SF Mono", Consolas, monospace;
-    background: var(--bg);
     color: var(--ink);
+    transition: border-color 0.15s ease;
+}
+
+#api-key-input::placeholder {
+    color: var(--ink-soft);
+    opacity: 0.6;
 }
 
 #api-key-input:focus-visible {
@@ -143,17 +188,22 @@ label {
 
 #toggle-visibility-btn {
     padding: 0 14px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
     color: var(--ink-soft);
     font-size: 12.5px;
     font-weight: 650;
     cursor: pointer;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    transition: background 0.15s ease, color 0.12s ease;
 }
 
 #toggle-visibility-btn:hover {
-    background: var(--border);
+    background: var(--glass-bg-hover);
+    color: var(--ink);
 }
 
 .help-text {
@@ -165,7 +215,14 @@ label {
 .help-text a {
     color: var(--accent);
     font-weight: 600;
+    text-decoration: none;
 }
+
+.help-text a:hover {
+    text-decoration: underline;
+}
+
+/* --- Buttons --- */
 
 .button-row {
     display: flex;
@@ -174,13 +231,14 @@ label {
 }
 
 .btn {
-    padding: 9px 16px;
+    padding: 9px 18px;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius);
     font-size: 13px;
     font-weight: 650;
     cursor: pointer;
-    transition: filter 0.12s ease, transform 0.08s ease;
+    font-family: inherit;
+    transition: filter 0.12s ease, box-shadow 0.15s ease, transform 0.08s ease;
 }
 
 .btn:active {
@@ -196,27 +254,34 @@ label {
 .btn-primary {
     background: var(--accent);
     color: white;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 10px rgba(139, 124, 255, 0.3);
 }
 
 .btn-primary:hover:not(:disabled) {
-    filter: brightness(1.08);
+    filter: brightness(1.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 18px rgba(139, 124, 255, 0.5);
 }
 
 .btn-secondary {
-    background: var(--bg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
     color: var(--ink-soft);
-    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: var(--border);
+    background: var(--glass-bg-hover);
+    color: var(--ink);
 }
 
 .feedback {
     font-size: 12.5px;
     font-weight: 600;
     margin: 14px 0 0;
-    min-height: 16px;
+    min-height: 18px;
+    line-height: 1.4;
 }
 
 .feedback.success {
@@ -247,49 +312,65 @@ label {
     font-size: 12px;
     font-weight: 650;
     cursor: pointer;
-    padding: 2px 4px;
+    padding: 4px 8px;
+    border-radius: 7px;
+    font-family: inherit;
+    transition: background 0.15s ease;
 }
 
 .link-btn:hover {
-    text-decoration: underline;
+    background: var(--glass-bg-hover);
 }
 
 .quota-caveat {
     font-size: 11.5px;
     color: var(--ink-soft);
-    opacity: 0.85;
+    opacity: 0.8;
     margin-top: -6px;
 }
 
-#model-list {
+#model-list,
+#restore-mode-list {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     margin-top: 14px;
 }
 
+/* Model rows and restore-mode rows share the same glass-card style */
 .model-row {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
+    padding: 12px 14px;
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--glass-radius);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
     cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .model-row:hover:not(.model-row-disabled) {
-    border-color: var(--accent);
+    background: var(--glass-bg-hover);
+    border-color: rgba(139, 124, 255, 0.4);
 }
 
 .model-row.model-row-selected {
-    border-color: var(--accent);
     background: var(--accent-soft);
+    border-color: rgba(139, 124, 255, 0.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 0 1px rgba(139, 124, 255, 0.15);
+}
+
+.model-row.model-row-active {
+    border-color: rgba(52, 211, 153, 0.45);
 }
 
 .model-row.model-row-disabled {
     cursor: default;
-    opacity: 0.55;
+    opacity: 0.45;
 }
 
 .model-row input[type="radio"] {
@@ -310,10 +391,7 @@ label {
     gap: 8px;
     font-size: 13px;
     font-weight: 650;
-}
-
-.model-row.model-row-active {
-    border-color: var(--success);
+    color: var(--ink);
 }
 
 .model-row-tag {
@@ -322,14 +400,16 @@ label {
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--accent);
-    background: var(--accent-soft);
-    padding: 1px 6px;
+    background: rgba(139, 124, 255, 0.22);
+    border: 1px solid rgba(139, 124, 255, 0.3);
+    padding: 1px 7px;
     border-radius: 8px;
 }
 
 .model-row-tag-active {
     color: var(--success);
-    background: var(--success-soft);
+    background: rgba(52, 211, 153, 0.16);
+    border-color: rgba(52, 211, 153, 0.3);
 }
 
 .model-row-status {
@@ -346,6 +426,8 @@ label {
     font-weight: 600;
 }
 
+/* --- Usage dots and count badges --- */
+
 .usage-dot {
     width: 7px;
     height: 7px;
@@ -354,22 +436,25 @@ label {
 }
 
 .usage-dot-unused {
-    background: var(--border);
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .usage-dot-used {
     background: var(--success);
+    box-shadow: 0 0 4px rgba(52, 211, 153, 0.5);
 }
 
 .usage-dot-exhausted {
     background: var(--danger);
+    box-shadow: 0 0 4px rgba(255, 107, 107, 0.5);
 }
 
 .usage-count {
     font-size: 11px;
     font-weight: 700;
     color: var(--ink);
-    background: var(--border);
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--glass-border);
     padding: 1px 7px;
     border-radius: 8px;
     flex-shrink: 0;
@@ -378,10 +463,16 @@ label {
 .usage-count-exhausted {
     color: var(--danger);
     background: var(--danger-soft);
+    border-color: rgba(255, 107, 107, 0.3);
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .btn {
+
+    .btn,
+    .model-row,
+    #api-key-input,
+    #toggle-visibility-btn,
+    .link-btn {
         transition: none;
     }
 }
