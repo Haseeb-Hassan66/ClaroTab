@@ -374,27 +374,37 @@ function buildTabElement(tab) {
     favicon.className = "tab-favicon";
     favicon.alt = "";
 
-    // Only attempt to load an image when there's an actual URL. Assigning an
-    // empty string as `src` still counts as "an image failed to load" in the
-    // browser's eyes, but critically it does NOT fire the `error` event --
-    // so the fallback below never ran, leaving a permanent broken-image icon.
-    // Skipping the assignment entirely avoids the problem altogether.
-    if (tab.favIconUrl) {
-        favicon.src = tab.favIconUrl;
+    // Use Chrome's internal _favicon endpoint instead of tab.favIconUrl directly.
+    //
+    // The old approach (loading tab.favIconUrl directly) had two compounding problems:
+    //  1. tab.favIconUrl is often empty even when Chrome knows the favicon --
+    //     the property isn't populated for background tabs, recently-closed tabs,
+    //     or tabs whose pages haven't fully loaded yet.
+    //  2. When favIconUrl was set, we made a cross-origin HTTP request to the
+    //     site to fetch it -- and many sites send headers blocking cross-origin
+    //     image reads, which is exactly what the NotSameOrigin errors in the
+    //     console were: the browser enforcing those headers, not a bug in our code.
+    //
+    // chrome-extension://<id>/_favicon/?pageUrl=<url>&size=16 is a special endpoint
+    // Chrome provides to all extensions. It reads from Chrome's own internal favicon
+    // cache (the same one that populates address bar icons) -- no network request
+    // happens at all, so cross-origin headers can't interfere. It also finds icons
+    // Chrome has cached from browsing history even when favIconUrl was empty.
+    if (tab.url) {
+        const faviconUrl = `chrome-extension://${chrome.runtime.id}/_favicon/?pageUrl=${encodeURIComponent(tab.url)}&size=16`;
+        favicon.src = faviconUrl;
         favicon.addEventListener(
             "error",
             () => {
-                // A real load failure (e.g. a site blocking cross-origin favicon
-                // reads) -- remove the src so the plain color swatch shows instead
-                // of a broken-image glyph.
+                // Chrome had no cached favicon for this URL (new tabs, internal
+                // pages like chrome://, etc.) -- fall back to the plain CSS swatch.
                 favicon.removeAttribute("src");
             },
             { once: true }
         );
     }
-    // If there's no favIconUrl at all, we simply never set `src` -- the
-    // element just renders as its default background-color swatch (already
-    // styled in CSS), with no broken-image icon ever appearing.
+    // No tab.url at all (shouldn't happen for real tabs, but defensive) --
+    // leave src unset so the CSS swatch renders cleanly.
 
     const title = document.createElement("span");
     title.className = "tab-title";
