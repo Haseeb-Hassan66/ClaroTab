@@ -443,8 +443,13 @@ function renderDuplicateAction(tabs) {
     freshButton.addEventListener("click", async () => {
         freshButton.disabled = true;
         freshButton.querySelector(".action-text").textContent = "Closing…";
-        await closeDuplicateTabs(tabs);
-        await init();
+        try {
+            await closeDuplicateTabs(tabs);
+        } catch (err) {
+            console.error("ClaroTab: Error closing duplicate tabs:", err);
+        } finally {
+            await init();
+        }
     });
 }
 

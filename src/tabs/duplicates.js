@@ -84,7 +84,18 @@ export async function closeDuplicateTabs(tabs) {
     }
 
     if (idsToClose.length > 0) {
-        await chrome.tabs.remove(idsToClose);
+        try {
+            await chrome.tabs.remove(idsToClose);
+        } catch (err) {
+            console.warn("ClaroTab: Batch tab removal failed, removing individually:", err);
+            for (const id of idsToClose) {
+                try {
+                    await chrome.tabs.remove(id);
+                } catch {
+                    // Tab was already closed or invalid — safely ignore
+                }
+            }
+        }
     }
 
     return idsToClose.length;
