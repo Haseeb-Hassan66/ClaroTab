@@ -46,6 +46,19 @@
   --glass-shadow: 0 8px 32px rgba(20, 10, 60, 0.35);
   --glass-radius: 16px;
 
+  /* --- Motion tokens ---
+     Three named curves cover every motion type in the product:
+     --ease-out:    entrance animations -- fast out of the gate, settles smoothly.
+                    Use for: rise-in, collapse/expand, banner appear.
+     --ease-spring: elastic entrances -- slight overshoot then settle.
+                    Use for: modal pop-in, press release.
+     --ease-ui:     interface micro-transitions -- symmetric, never feels rushed.
+                    Use for: hover colors, opacity fades, input focus rings.
+     Standardising here means a single edit changes the whole product's feel. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --ease-ui: cubic-bezier(0.4, 0, 0.2, 1);
+
   /* --- Category color-coding --- */
   /* Re-tuned from the old light-theme palette: several of the originals
      (e.g. the near-black gray used for Email) would have nearly vanished
@@ -99,6 +112,45 @@ body {
     radial-gradient(ellipse 90% 70% at 90% -5%, rgba(70, 60, 200, 0.3), transparent 60%),
     var(--bg);
   color: var(--ink);
+  position: relative;
+  overflow: hidden;
+  /* contain the animated pseudo-element */
+}
+
+/* Animated blob -- a large soft radial-gradient disc that floats slowly
+   over the mesh. Because it's a pseudo-element animated with transform only,
+   the animation runs on the compositor thread and costs no repaints.
+   The disc is large and low-opacity so the 40px float reads as the
+   background "breathing" rather than a distracting movement. */
+body::before {
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: -20%;
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(120, 100, 255, 0.2), transparent 70%);
+  will-change: transform;
+  animation: blob-drift 16s var(--ease-ui) infinite alternate;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes blob-drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+
+  to {
+    transform: translate(40px, 35px) scale(1.08);
+  }
+}
+
+/* All direct body children need to sit above the animated pseudo-element */
+body>* {
+  position: relative;
+  z-index: 1;
 }
 
 * {
@@ -146,7 +198,7 @@ header {
   border-radius: 7px;
   color: var(--ink-soft);
   cursor: pointer;
-  transition: background 0.12s ease, color 0.12s ease, transform 0.15s ease;
+  transition: background 0.15s var(--ease-ui), color 0.15s var(--ease-ui), transform 0.22s var(--ease-out);
 }
 
 #settings-btn svg {
@@ -208,7 +260,7 @@ h1 {
   font-weight: 650;
   color: var(--ink-soft);
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: background 0.15s var(--ease-ui), color 0.15s var(--ease-ui), box-shadow 0.15s var(--ease-ui);
 }
 
 .nav-btn:hover:not(.active) {
@@ -250,7 +302,7 @@ h1 {
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  animation: rise-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: rise-in 0.24s var(--ease-out) both;
 }
 
 #ai-banner.hidden {
@@ -303,7 +355,7 @@ h1 {
   color: inherit;
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  transition: background 0.15s ease, transform 0.08s ease;
+  transition: background 0.15s var(--ease-ui), transform 0.1s var(--ease-ui);
 }
 
 .ai-banner-action:hover {
@@ -336,7 +388,7 @@ h1 {
   cursor: pointer;
   text-align: left;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease;
+  transition: background 0.15s var(--ease-ui), box-shadow 0.15s var(--ease-ui), transform 0.1s var(--ease-ui);
 }
 
 #close-duplicates-btn:hover {
@@ -403,7 +455,7 @@ h1 {
   cursor: pointer;
   padding: 3px 8px;
   border-radius: 7px;
-  transition: background 0.15s ease, transform 0.08s ease;
+  transition: background 0.15s var(--ease-ui), transform 0.1s var(--ease-ui);
 }
 
 #toggle-all-btn:hover {
@@ -448,6 +500,12 @@ h1 {
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+}
+
+.group:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(20, 10, 60, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 .group-header {
@@ -458,7 +516,7 @@ h1 {
   cursor: pointer;
   border-radius: 10px;
   user-select: none;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s var(--ease-ui), transform 0.1s var(--ease-ui);
 }
 
 .group-header:hover {
@@ -512,7 +570,7 @@ h1 {
 .chevron {
   display: inline-flex;
   color: var(--ink-soft);
-  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.24s var(--ease-out);
   flex-shrink: 0;
 }
 
@@ -532,7 +590,7 @@ h1 {
 .group-body {
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: grid-template-rows 0.28s var(--ease-out);
 }
 
 .group.collapsed .group-body {
@@ -542,7 +600,7 @@ h1 {
 .group-body>.tab-list {
   min-height: 0;
   overflow: hidden;
-  transition: opacity 0.18s ease;
+  transition: opacity 0.18s var(--ease-ui);
 }
 
 .group.collapsed .group-body>.tab-list {
@@ -563,7 +621,7 @@ h1 {
   border-radius: 7px;
   cursor: pointer;
   font-size: 13px;
-  transition: background 0.12s ease, transform 0.1s ease;
+  transition: background 0.15s var(--ease-ui), transform 0.1s var(--ease-ui);
 }
 
 .tab-item:hover {
@@ -612,7 +670,7 @@ h1 {
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   color: var(--ink);
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s var(--ease-ui), background 0.15s var(--ease-ui);
 }
 
 #session-name-input::placeholder {
@@ -663,7 +721,7 @@ h1 {
   font-weight: 650;
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 10px rgba(139, 124, 255, 0.3);
-  transition: filter 0.12s ease, box-shadow 0.15s ease;
+  transition: filter 0.15s var(--ease-ui), box-shadow 0.15s var(--ease-ui);
 }
 
 #save-session-btn:hover {
@@ -695,11 +753,13 @@ h1 {
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: background 0.15s ease, transform 0.08s ease;
+  transition: background 0.15s var(--ease-ui), transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
 }
 
 .session-item:hover {
   background: var(--glass-bg-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 40px rgba(20, 10, 60, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 .session-item:active {
@@ -740,7 +800,7 @@ h1 {
   font-weight: 650;
   cursor: pointer;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  transition: background 0.15s ease, transform 0.08s ease;
+  transition: background 0.15s var(--ease-ui), transform 0.1s var(--ease-ui);
 }
 
 .session-btn:hover {
@@ -771,7 +831,7 @@ h1 {
 #close-duplicates-btn,
 .modal-btn {
   transform: scale(1);
-  transition: filter 0.12s ease, transform 0.08s ease, background 0.12s ease, color 0.12s ease;
+  transition: filter 0.15s var(--ease-ui), transform 0.1s var(--ease-ui), background 0.15s var(--ease-ui), color 0.15s var(--ease-ui);
 }
 
 .nav-btn:active,
@@ -818,11 +878,11 @@ h1 {
 }
 
 .group {
-  animation: rise-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: rise-in 0.24s var(--ease-out) both;
 }
 
 .session-item {
-  animation: rise-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: rise-in 0.24s var(--ease-out) both;
 }
 
 /* --- Confirm modal --- */
@@ -835,7 +895,7 @@ h1 {
   align-items: center;
   justify-content: center;
   z-index: 10;
-  animation: overlay-fade-in 0.15s ease;
+  animation: overlay-fade-in 0.15s var(--ease-ui);
 }
 
 /* Needs #id.class specificity to reliably beat the #modal-overlay rule above --
@@ -863,7 +923,7 @@ h1 {
   border-radius: var(--glass-radius);
   padding: 16px;
   box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  animation: modal-pop-in 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  animation: modal-pop-in 0.2s var(--ease-spring);
 }
 
 @keyframes modal-pop-in {
@@ -930,10 +990,12 @@ h1 {
 
 @media (prefers-reduced-motion: reduce) {
 
+  body::before,
   .chevron,
   .group-body,
   #close-duplicates-btn,
   .group-header,
+  .group,
   .tab-item,
   .session-item,
   .nav-btn,
@@ -943,12 +1005,16 @@ h1 {
   #modal-overlay,
   #modal,
   .brand-mark.loading,
-  .group,
   .ai-banner-action,
   #toggle-all-btn,
   #ai-banner,
   #session-name-input.input-error {
     animation: none;
     transition: none;
+  }
+
+  .group:hover,
+  .session-item:hover {
+    transform: none;
   }
 }
