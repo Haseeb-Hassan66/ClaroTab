@@ -113,26 +113,26 @@ body {
     var(--bg);
   color: var(--ink);
   position: relative;
-  overflow: hidden;
-  /* contain the animated pseudo-element */
+  /* NO overflow:hidden -- it was clipping the animated blob entirely since
+     body::before started at top:-30% which is outside body's own box */
 }
 
-/* Animated blob -- a large soft radial-gradient disc that floats slowly
-   over the mesh. Because it's a pseudo-element animated with transform only,
-   the animation runs on the compositor thread and costs no repaints.
-   The disc is large and low-opacity so the 40px float reads as the
-   background "breathing" rather than a distracting movement. */
+/* Animated blob -- floats slowly over the gradient mesh to make the
+   background feel alive rather than static. Uses position:fixed so the
+   popup window clips it naturally without overflow:hidden interfering.
+   Transform-only animation = compositor thread, zero repaint cost. */
 body::before {
   content: "";
-  position: absolute;
-  top: -30%;
-  left: -20%;
-  width: 80%;
-  height: 80%;
+  position: fixed;
+  /* fixed = not clipped by any ancestor's overflow */
+  top: -40%;
+  left: -25%;
+  width: 90%;
+  height: 90%;
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(120, 100, 255, 0.2), transparent 70%);
+  background: radial-gradient(ellipse, rgba(120, 100, 255, 0.38), transparent 65%);
   will-change: transform;
-  animation: blob-drift 16s var(--ease-ui) infinite alternate;
+  animation: blob-drift 16s ease-in-out infinite alternate;
   pointer-events: none;
   z-index: 0;
 }
@@ -143,11 +143,11 @@ body::before {
   }
 
   to {
-    transform: translate(40px, 35px) scale(1.08);
+    transform: translate(50px, 45px) scale(1.12);
   }
 }
 
-/* All direct body children need to sit above the animated pseudo-element */
+/* Direct body children sit above the blob */
 body>* {
   position: relative;
   z-index: 1;
@@ -504,8 +504,8 @@ h1 {
 }
 
 .group:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 14px 40px rgba(20, 10, 60, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  transform: translateY(-4px);
+  box-shadow: 0 18px 48px rgba(20, 10, 60, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 .group-header {
@@ -758,8 +758,8 @@ h1 {
 
 .session-item:hover {
   background: var(--glass-bg-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 14px 40px rgba(20, 10, 60, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  transform: translateY(-4px);
+  box-shadow: 0 18px 48px rgba(20, 10, 60, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 .session-item:active {
