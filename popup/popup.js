@@ -753,7 +753,133 @@ function setupSettingsButton() {
     });
 }
 
+function getVisibleFocusableElements() {
+    const selector = 'button:not([disabled]), [tabindex="0"]:not([disabled]), input:not([disabled])';
+    const all = Array.from(document.querySelectorAll(selector));
+    return all.filter((el) => {
+        if (el.closest(".hidden")) return false;
+        // Don't include tab items inside a collapsed group
+        if (el.classList.contains("tab-item") && el.closest(".group.collapsed")) return false;
+        return el.offsetWidth > 0 || el.offsetHeight > 0 || el.getClientRects().length > 0;
+    });
+}
+
+function setupKeyboardNavigation() {
+    document.addEventListener("keydown", (e) => {
+        // Modal overlay handles its own focus trap and arrow keys
+        const modalOverlay = document.getElementById("modal-overlay");
+        if (modalOverlay && !modalOverlay.classList.contains("hidden")) {
+            return;
+        }
+
+        const key = e.key;
+        if (!["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"].includes(key)) {
+            return;
+        }
+
+        const activeEl = document.activeElement;
+        const isTextInput = activeEl && (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA");
+
+        // Preserve text cursor movement inside text inputs
+        if (isTextInput && ["ArrowLeft", "ArrowRight", "Home", "End"].includes(key)) {
+            return;
+        }
+
+        // Accordion behavior for Group Headers
+        if (activeEl && activeEl.classList.contains("group-header")) {
+            const group = activeEl.closest(".group");
+            if (group) {
+                const isCollapsed = group.classList.contains("collapsed");
+                if (key === "ArrowRight") {
+                    e.preventDefault();
+                    if (isCollapsed) {
+                        activeEl.click();
+                    } else {
+                        const firstTab = group.querySelector(".tab-item");
+                        if (firstTab) firstTab.focus();
+                    }
+                    return;
+                }
+                if (key === "ArrowLeft") {
+                    e.preventDefault();
+                    if (!isCollapsed) {
+                        activeEl.click();
+                    }
+                    return;
+                }
+            }
+        }
+
+        // Tab item: ArrowLeft moves focus back up to its parent group header
+        if (activeEl && activeEl.classList.contains("tab-item") && key === "ArrowLeft") {
+            const groupHeader = activeEl.closest(".group")?.querySelector(".group-header");
+            if (groupHeader) {
+                e.preventDefault();
+                groupHeader.focus();
+                return;
+            }
+        }
+
+        // Nav tabs: ArrowLeft / ArrowRight switches between Tabs and Sessions
+        if (activeEl && activeEl.classList.contains("nav-btn")) {
+            if (key === "ArrowLeft" || key === "ArrowRight") {
+                const navBtns = Array.from(document.querySelectorAll(".nav-btn"));
+                const currentIdx = navBtns.indexOf(activeEl);
+                if (currentIdx !== -1) {
+                    e.preventDefault();
+                    const nextIdx =
+                        key === "ArrowRight"
+                            ? (currentIdx + 1) % navBtns.length
+                            : (currentIdx - 1 + navBtns.length) % navBtns.length;
+                    navBtns[nextIdx].click();
+                    navBtns[nextIdx].focus();
+                    return;
+                }
+            }
+        }
+
+        // General list & button navigation
+        const elements = getVisibleFocusableElements();
+        if (elements.length === 0) return;
+
+        const currentIndex = elements.indexOf(activeEl);
+
+        if (key === "Home") {
+            e.preventDefault();
+            elements[0].focus();
+            elements[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+            return;
+        }
+
+        if (key === "End") {
+            e.preventDefault();
+            const last = elements[elements.length - 1];
+            last.focus();
+            last.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            return;
+        }
+
+        if (key === "ArrowDown" || key === "ArrowRight") {
+            e.preventDefault();
+            const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % elements.length;
+            elements[nextIndex].focus();
+            elements[nextIndex].scrollIntoView({ block: "nearest", behavior: "smooth" });
+            return;
+        }
+
+        if (key === "ArrowUp" || key === "ArrowLeft") {
+            e.preventDefault();
+            const prevIndex =
+                currentIndex === -1 ? elements.length - 1 : (currentIndex - 1 + elements.length) % elements.length;
+            elements[prevIndex].focus();
+            elements[prevIndex].scrollIntoView({ block: "nearest", behavior: "smooth" });
+            return;
+        }
+    });
+}
+
 setupSettingsButton();
 setupNav();
 setupSaveSession();
+setupKeyboardNavigation();
 init();
