@@ -735,8 +735,17 @@ function buildSessionElement(session) {
         );
         if (!confirmed) return;
 
-        await deleteSession(session.id);
-        await renderSessions();
+        deleteBtn.disabled = true;
+        deleteBtn.textContent = "Deleting…";
+
+        try {
+            await deleteSession(session.id);
+            await renderSessions();
+        } catch (err) {
+            console.error("ClaroTab: failed to delete session:", err);
+            deleteBtn.textContent = "Failed — retry?";
+            deleteBtn.disabled = false;
+        }
     });
 
     actions.append(restoreBtn, deleteBtn);
