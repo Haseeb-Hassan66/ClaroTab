@@ -231,14 +231,15 @@ ${tabList}`;
         // to guard getOrderedModels() (a storage read) and any other genuinely
         // unexpected failure, not per-model issues.
         const chain = await getOrderedModels();
+        const submittedTabIds = new Set(tabs.map((tab) => String(tab.id)));
 
         for (const model of chain) {
             const result = await attemptModel(model, apiKey, requestBody);
 
             if (result.ok) {
                 const filtered = {};
-                for (const [tabId, category] of Object.entries(result.categories)) {
-                    if (assignableCategories.includes(category)) {
+                for (const [tabId, category] of Object.entries(result.categories || {})) {
+                    if (submittedTabIds.has(String(tabId)) && assignableCategories.includes(category)) {
                         filtered[tabId] = category;
                     }
                 }
