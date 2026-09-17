@@ -12,8 +12,16 @@ import { getCategoryIcon, UI_ICONS } from "../src/categorize/icons.js";
 // Kept up to date every time init() runs, so the "Save session" button
 // always has the current tab list without needing to re-query.
 let currentTabs = [];
+let isInitializing = false;
+let pendingInit = false;
 
 async function init() {
+    if (isInitializing) {
+        pendingInit = true;
+        return;
+    }
+    isInitializing = true;
+
     const brandMark = document.querySelector(".brand-mark");
     brandMark.classList.add("loading");
 
@@ -54,6 +62,11 @@ async function init() {
     } finally {
         await minPulseDuration;
         brandMark.classList.remove("loading");
+        isInitializing = false;
+        if (pendingInit) {
+            pendingInit = false;
+            init();
+        }
     }
 }
 
