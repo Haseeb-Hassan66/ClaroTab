@@ -1,15 +1,6 @@
 :root {
   /* --- Base surfaces --- */
-  /* Deep near-black navy base -- the gradient-mesh blobs sit on top of this. */
   --bg: #0a0a12;
-  /* Opaque dark card surface. Deliberately NOT translucent yet -- the
-     frosted "liquid glass" treatment (backdrop-filter blur) is applied
-     per-component in later phases, once there's real content to frost
-     over. Keeping surfaces opaque for now keeps everything legible while
-     the rest of the redesign is still in progress. */
-  --surface: #15161f;
-  --surface-raised: #1b1c28;
-  /* one step lighter, for stacked/hover states */
 
   /* --- Text --- */
   --ink: #f3f2f8;
@@ -19,8 +10,6 @@
   --border: rgba(255, 255, 255, 0.1);
 
   /* --- Accent --- */
-  /* Brighter than the old light-theme accent on purpose -- a saturated
-     blue-violet needs more luminance to read clearly against a dark base. */
   --accent: #8b7cff;
   --accent-soft: rgba(139, 124, 255, 0.16);
 
@@ -35,10 +24,6 @@
   --radius: 14px;
 
   /* --- Glass panel system --- */
-  /* Defined now, applied to real components starting in Phase 3+. A
-     "liquid glass" surface is a translucent light overlay + backdrop blur
-     sitting on top of the gradient-mesh background, with a soft inner
-     border to catch light and a colored ambient shadow. */
   --glass-bg: rgba(255, 255, 255, 0.06);
   --glass-bg-hover: rgba(255, 255, 255, 0.09);
   --glass-border: rgba(255, 255, 255, 0.14);
@@ -46,24 +31,12 @@
   --glass-shadow: 0 8px 32px rgba(20, 10, 60, 0.35);
   --glass-radius: 16px;
 
-  /* --- Motion tokens ---
-     Three named curves cover every motion type in the product:
-     --ease-out:    entrance animations -- fast out of the gate, settles smoothly.
-                    Use for: rise-in, collapse/expand, banner appear.
-     --ease-spring: elastic entrances -- slight overshoot then settle.
-                    Use for: modal pop-in, press release.
-     --ease-ui:     interface micro-transitions -- symmetric, never feels rushed.
-                    Use for: hover colors, opacity fades, input focus rings.
-     Standardising here means a single edit changes the whole product's feel. */
+  /* --- Motion tokens --- */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.2);
   --ease-ui: cubic-bezier(0.4, 0, 0.2, 1);
 
-  /* --- Category color-coding --- */
-  /* Re-tuned from the old light-theme palette: several of the originals
-     (e.g. the near-black gray used for Email) would have nearly vanished
-     against a dark background, so every color here was re-checked for
-     contrast against --bg and --surface, not just carried over as-is. */
+  /* --- Category colors --- */
   --cat-coding: #a78bfa;
   --cat-shopping: #ff9f5a;
   --cat-entertainment: #ff7aa8;
@@ -75,13 +48,7 @@
   --cat-news: #d18ff0;
   --cat-other: #8886a3;
 
-  /* --- Category icon colors --- */
-  /* A plain white icon on every badge looked broken in practice: several
-     of the category colors above are light/bright pastels (chosen for
-     legibility against the dark background), and white-on-light-yellow or
-     white-on-pale-lavender is nearly unreadable. Each value below was
-     picked by computing relative luminance for its matching --cat-* color
-     (WCAG-style formula) rather than eyeballed, so it's not guesswork. */
+  /* --- Category icon colors (computed from relative luminance) --- */
   --cat-coding-icon: white;
   --cat-shopping-icon: #1b1626;
   --cat-entertainment-icon: #1b1626;
@@ -94,14 +61,6 @@
   --cat-other-icon: white;
 }
 
-/* The gradient-mesh background -- pure layered CSS radial-gradients, no
-   filter/blur and no DOM elements needed. Soft, fading-to-transparent
-   stops create the blurred-blob look directly, which is far cheaper to
-   render than actual blurred pseudo-elements would be -- important in a
-   small popup that needs to open instantly. Motion/animation on this is
-   deliberately deferred to the dedicated animation-polish phase, so this
-   step stays isolated to "what does the base look like at rest."
-*/
 body {
   width: 360px;
   margin: 0;
@@ -113,18 +72,13 @@ body {
     var(--bg);
   color: var(--ink);
   position: relative;
-  /* NO overflow:hidden -- it was clipping the animated blob entirely since
-     body::before started at top:-30% which is outside body's own box */
 }
 
-/* Animated blob -- floats slowly over the gradient mesh to make the
-   background feel alive rather than static. Uses position:fixed so the
-   popup window clips it naturally without overflow:hidden interfering.
-   Transform-only animation = compositor thread, zero repaint cost. */
+/* Animated blob. position:fixed so it is not clipped by any ancestor's
+   overflow. Transform-only animation stays on the compositor thread. */
 body::before {
   content: "";
   position: fixed;
-  /* fixed = not clipped by any ancestor's overflow */
   top: -40%;
   left: -25%;
   width: 90%;
@@ -171,8 +125,7 @@ header {
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border-bottom: 1px solid var(--glass-border);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
-  position: relative;
-  z-index: 1;
+  /* position/z-index inherited from body > * rule */
 }
 
 .header-row {
@@ -236,7 +189,7 @@ h1 {
   margin: 6px 0 0 18px;
 }
 
-/* --- Nav: segmented pill control --- */
+/* --- Nav --- */
 
 #tabs-nav {
   display: flex;
@@ -287,9 +240,7 @@ h1 {
   display: none;
 }
 
-/* --- Action bar: "Close duplicates" suggestion card --- */
-
-/* --- AI status banner: surfaces AI-related state instead of failing silently --- */
+/* --- AI status banner --- */
 
 #ai-banner {
   display: flex;
@@ -370,6 +321,8 @@ h1 {
   display: none;
 }
 
+/* --- Action bar (close duplicates) --- */
+
 #action-bar {
   padding: 10px 16px 0;
 }
@@ -429,7 +382,7 @@ h1 {
   color: var(--accent);
 }
 
-/* --- Groups toolbar (expand/collapse all) --- */
+/* --- Groups toolbar --- */
 
 #groups-toolbar {
   display: flex;
@@ -491,6 +444,9 @@ h1 {
   opacity: 0.5;
 }
 
+/* FIX: was defined twice -- glass card + animation were separate blocks,
+   causing the animation declaration to override nothing but waste specificity.
+   Merged into one canonical definition. */
 .group {
   margin-bottom: 8px;
   border-radius: var(--glass-radius);
@@ -501,6 +457,7 @@ h1 {
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+  animation: rise-in 0.24s var(--ease-out) both;
 }
 
 .group:hover {
@@ -583,10 +540,6 @@ h1 {
   transform: rotate(-90deg);
 }
 
-/* Smooth collapse/expand using the CSS grid-rows trick -- animates to/from
-   "auto" height without needing JS to measure pixel heights. A fade is
-   layered on top so tabs dissolve in/out rather than hard-cutting the
-   instant the height animation finishes, which reads as more liquid. */
 .group-body {
   display: grid;
   grid-template-rows: 1fr;
@@ -682,9 +635,6 @@ h1 {
   outline-offset: 1px;
 }
 
-/* Danger state when Save is clicked with no name.
-   Uses --danger-soft background + --danger border to match the same
-   error color language the AI banner uses (variant-error). */
 #session-name-input.input-error {
   border-color: var(--danger);
   background: var(--danger-soft);
@@ -740,6 +690,8 @@ h1 {
   padding: 0 10px 12px;
 }
 
+/* FIX: was defined twice -- glass card + animation were separate blocks.
+   Merged into one canonical definition. */
 .session-item {
   display: flex;
   align-items: center;
@@ -754,6 +706,7 @@ h1 {
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06);
   transition: background 0.15s var(--ease-ui), transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+  animation: rise-in 0.24s var(--ease-out) both;
 }
 
 .session-item:hover {
@@ -822,7 +775,7 @@ h1 {
   cursor: default;
 }
 
-/* --- Press feedback: the thing that makes buttons feel physically clickable --- */
+/* --- Press feedback --- */
 
 .nav-btn,
 #toggle-all-btn,
@@ -843,7 +796,7 @@ h1 {
   transform: scale(0.96);
 }
 
-/* --- Loading pulse on the brand mark while tabs are being read --- */
+/* --- Animations --- */
 
 .brand-mark.loading {
   animation: pulse 1.1s ease-in-out infinite;
@@ -863,8 +816,6 @@ h1 {
   }
 }
 
-/* --- Staggered entrance animation for list items --- */
-
 @keyframes rise-in {
   from {
     opacity: 0;
@@ -875,14 +826,6 @@ h1 {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.group {
-  animation: rise-in 0.24s var(--ease-out) both;
-}
-
-.session-item {
-  animation: rise-in 0.24s var(--ease-out) both;
 }
 
 /* --- Confirm modal --- */
@@ -898,8 +841,6 @@ h1 {
   animation: overlay-fade-in 0.15s var(--ease-ui);
 }
 
-/* Needs #id.class specificity to reliably beat the #modal-overlay rule above --
-   a plain .hidden class alone loses to an ID selector regardless of source order. */
 #modal-overlay.hidden {
   display: none;
 }

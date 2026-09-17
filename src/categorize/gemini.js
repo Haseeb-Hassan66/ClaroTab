@@ -44,9 +44,12 @@ export async function testApiKey(apiKey) {
     }
 
     try {
-        const response = await fetch(`${endpointFor(MODEL_FALLBACK_CHAIN[0])}?key=${apiKey.trim()}`, {
+        const response = await fetch(endpointFor(MODEL_FALLBACK_CHAIN[0]), {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey.trim(),
+            },
             body: JSON.stringify({
                 contents: [{ role: "user", parts: [{ text: "Reply with just the word OK." }] }],
                 generationConfig: { temperature: 0, maxOutputTokens: 10 },
@@ -85,9 +88,12 @@ export async function testApiKey(apiKey) {
 async function attemptModel(model, apiKey, requestBody) {
     let response;
     try {
-        response = await fetch(`${endpointFor(model)}?key=${apiKey}`, {
+        response = await fetch(endpointFor(model), {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "x-goog-api-key": apiKey,
+            },
             body: requestBody,
         });
     } catch (err) {
@@ -125,10 +131,14 @@ async function attemptModel(model, apiKey, requestBody) {
     }
     if (!response.ok) {
         const bodyText = await response.text().catch(() => "");
-        console.warn("ClaroTab: Gemini API request failed:", response.status, bodyText);
+        // 5xx errors (503, 502, 500…) are transient server-side issues on Google's end,
+        // exactly like a 429 rate-limit. Aborting the whole chain on a single model's
+        // server hiccup wastes the remaining fallback options. Try the next model instead.
+        const isTransient = response.status >= 500;
+        console.warn(`ClaroTab: ${model} returned ${response.status}${isTransient ? ", trying the next model..." : ""}:`, bodyText);
         return {
             ok: false,
-            tryNextModel: false,
+            tryNextModel: isTransient,
             error: { type: "unknown", message: `AI grouping failed (server error ${response.status}). It'll retry next time.` },
         };
     }
