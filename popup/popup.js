@@ -67,13 +67,31 @@ function renderErrorState() {
     );
 }
 
+const svgParser = new DOMParser();
+
+// Safely parses and inserts SVG icons via DOMParser instead of innerHTML to eliminate XSS risks.
+function setSvgIcon(element, svgString) {
+    if (!element) return;
+    element.replaceChildren();
+    if (!svgString) return;
+    try {
+        const parsed = svgParser.parseFromString(svgString, "text/html");
+        const svg = parsed.body.querySelector("svg");
+        if (!svg) return;
+        svg.querySelectorAll("script").forEach((s) => s.remove());
+        element.replaceChildren(svg);
+    } catch (err) {
+        console.warn("ClaroTab: Failed to parse SVG icon:", err);
+    }
+}
+
 // Shared builder for every "nothing to show" state, so they all look consistent.
 function buildEmptyState(iconSvg, message) {
     const wrapper = document.createElement("div");
     wrapper.className = "empty-state";
 
     const icon = document.createElement("div");
-    icon.innerHTML = iconSvg;
+    setSvgIcon(icon, iconSvg);
 
     const text = document.createElement("p");
     text.style.margin = "0";
@@ -209,7 +227,7 @@ function showAiBanner(variant, message, { actionLabel, onAction } = {}) {
     const actionBtn = document.getElementById("ai-banner-action");
 
     banner.className = `variant-${variant}`; // clears any previous variant class
-    icon.innerHTML = variant === "info" ? UI_ICONS.info : UI_ICONS.alert;
+    setSvgIcon(icon, variant === "info" ? UI_ICONS.info : UI_ICONS.alert);
     icon.setAttribute("aria-hidden", "true");
     text.textContent = message;
 
@@ -315,7 +333,7 @@ function buildGroupElement(category, tabs) {
     badge.className = "cat-badge";
     badge.style.background = `var(--cat-${slug}, var(--cat-other))`;
     badge.style.color = `var(--cat-${slug}-icon, white)`;
-    badge.innerHTML = getCategoryIcon(category);
+    setSvgIcon(badge, getCategoryIcon(category));
     badge.setAttribute("aria-hidden", "true"); // decorative -- the aria-label above already conveys the category
 
     const title = document.createElement("span");
@@ -328,7 +346,7 @@ function buildGroupElement(category, tabs) {
 
     const chevron = document.createElement("span");
     chevron.className = "chevron";
-    chevron.innerHTML = UI_ICONS.chevron;
+    setSvgIcon(chevron, UI_ICONS.chevron);
     chevron.setAttribute("aria-hidden", "true"); // decorative -- expand/collapse state is already conveyed via aria-expanded
 
     header.append(badge, title, count, chevron);
@@ -436,7 +454,7 @@ function renderDuplicateAction(tabs) {
     const freshButton = button.cloneNode(true);
     button.replaceWith(freshButton);
 
-    freshButton.querySelector(".action-icon").innerHTML = UI_ICONS.duplicates;
+    setSvgIcon(freshButton.querySelector(".action-icon"), UI_ICONS.duplicates);
     freshButton.querySelector(".action-text").textContent =
         `Close ${duplicateCount} duplicate${duplicateCount === 1 ? "" : "s"}`;
 
@@ -678,7 +696,7 @@ function buildSessionElement(session) {
 
 function setupSettingsButton() {
     const button = document.getElementById("settings-btn");
-    button.innerHTML = UI_ICONS.settings;
+    setSvgIcon(button, UI_ICONS.settings);
     button.addEventListener("click", () => {
         chrome.runtime.openOptionsPage();
     });
