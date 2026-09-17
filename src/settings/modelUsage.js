@@ -43,6 +43,9 @@ async function saveUsage(usage) {
  * @param {{ rateLimited: boolean }} outcome
  */
 export async function trackUsage(modelId, { rateLimited }) {
+    if (!MODEL_FALLBACK_CHAIN.includes(modelId)) {
+        return;
+    }
     const usage = await loadUsage();
     const today = getPacificDateKey();
 
@@ -85,16 +88,21 @@ export async function getUsageMap() {
  */
 export async function getPreferredModel() {
     const result = await chrome.storage.local.get(PREFERRED_MODEL_KEY);
-    return result[PREFERRED_MODEL_KEY] || null;
+    const model = result[PREFERRED_MODEL_KEY];
+    return MODEL_FALLBACK_CHAIN.includes(model) ? model : null;
 }
 
 /**
  * @param {string|null} modelId - pass null to clear the preference and return to fully automatic behavior
  */
 export async function setPreferredModel(modelId) {
-    if (modelId) {
-        await chrome.storage.local.set({ [PREFERRED_MODEL_KEY]: modelId });
-    } else {
+    if (!modelId) {
         await chrome.storage.local.remove(PREFERRED_MODEL_KEY);
+        return;
     }
-}
+    if (!MODEL_FALLBACK_CHAIN.includes(modelId)) {
+        console.warn(`ClaroTab: Unknown modelId "${modelId}" rejected.`);
+        return;
+    }
+    await chrome.storage.local.set({ [PREFERRED_MODEL_KEY]: modelId });
+}

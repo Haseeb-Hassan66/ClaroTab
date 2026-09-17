@@ -16,12 +16,19 @@ export const RESTORE_MODES = {
  */
 export async function getRestoreMode() {
     const result = await chrome.storage.local.get(RESTORE_MODE_KEY);
-    return result[RESTORE_MODE_KEY] || RESTORE_MODES.NEW_WINDOW;
+    const stored = result[RESTORE_MODE_KEY];
+    const validModes = Object.values(RESTORE_MODES);
+    return validModes.includes(stored) ? stored : RESTORE_MODES.NEW_WINDOW;
 }
 
 /**
  * @param {string} mode - one of RESTORE_MODES
  */
 export async function setRestoreMode(mode) {
+    const validModes = Object.values(RESTORE_MODES);
+    if (!validModes.includes(mode)) {
+        console.warn(`ClaroTab: Invalid restore mode "${mode}" rejected.`);
+        return;
+    }
     await chrome.storage.local.set({ [RESTORE_MODE_KEY]: mode });
 }
