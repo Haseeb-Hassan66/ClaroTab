@@ -506,12 +506,14 @@ function showConfirm(title, message, options = {}) {
     const confirmBtn = document.getElementById("modal-confirm");
     const cancelBtn = document.getElementById("modal-cancel");
 
+    const previouslyFocused = document.activeElement;
+
     titleEl.textContent = title;
     messageEl.textContent = message;
     confirmBtn.textContent = options.confirmLabel || "Confirm";
 
     overlay.classList.remove("hidden");
-    confirmBtn.focus();
+    cancelBtn.focus();
 
     return new Promise((resolve) => {
         const cleanup = (result) => {
@@ -520,6 +522,9 @@ function showConfirm(title, message, options = {}) {
             cancelBtn.removeEventListener("click", onCancel);
             overlay.removeEventListener("click", onOverlayClick);
             document.removeEventListener("keydown", onKeydown);
+            if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+                previouslyFocused.focus();
+            }
             resolve(result);
         };
 
@@ -528,10 +533,39 @@ function showConfirm(title, message, options = {}) {
         const onOverlayClick = (e) => {
             if (e.target === overlay) cleanup(false); // clicking the dimmed backdrop cancels
         };
+
         const onKeydown = (e) => {
             if (e.key === "Escape") {
                 e.preventDefault();
                 cleanup(false);
+                return;
+            }
+
+            // Arrow keys move focus between Cancel and Confirm
+            if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                e.preventDefault();
+                cancelBtn.focus();
+                return;
+            }
+            if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                e.preventDefault();
+                confirmBtn.focus();
+                return;
+            }
+
+            // Trap focus within the modal buttons on Tab
+            if (e.key === "Tab") {
+                if (e.shiftKey) {
+                    if (document.activeElement === cancelBtn || !overlay.contains(document.activeElement)) {
+                        e.preventDefault();
+                        confirmBtn.focus();
+                    }
+                } else {
+                    if (document.activeElement === confirmBtn || !overlay.contains(document.activeElement)) {
+                        e.preventDefault();
+                        cancelBtn.focus();
+                    }
+                }
             }
         };
 
