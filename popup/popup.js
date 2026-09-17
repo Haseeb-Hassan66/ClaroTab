@@ -12,15 +12,10 @@ import { getCategoryIcon, UI_ICONS } from "../src/categorize/icons.js";
 // Kept up to date every time init() runs, so the "Save session" button
 // always has the current tab list without needing to re-query.
 let currentTabs = [];
-let isInitializing = false;
-let pendingInit = false;
+let currentInitId = 0;
 
 async function init() {
-    if (isInitializing) {
-        pendingInit = true;
-        return;
-    }
-    isInitializing = true;
+    const initId = ++currentInitId;
 
     const brandMark = document.querySelector(".brand-mark");
     brandMark.classList.add("loading");
@@ -34,13 +29,17 @@ async function init() {
 
     try {
         const tabs = await getAllTabs();
+        if (initId !== currentInitId) return;
         currentTabs = tabs;
 
         // Resolve every tab's category up front, combining rules AND the AI
         // cache in one pass -- this is what prevents previously-AI-classified
         // tabs from flashing as "Other" before being corrected a moment later.
         const { categoryByTabId, unresolvedTabs } = await resolveCategories(tabs);
+        if (initId !== currentInitId) return;
+
         const groups = buildGroupsFromCategoryMap(tabs, categoryByTabId);
+        if (initId !== currentInitId) return;
 
         console.log("Tabs found:", tabs);
         console.log("Grouped (rules + cache):", groups);
@@ -52,20 +51,18 @@ async function init() {
         // AI refinement is a bonus layer -- if it throws for any reason we
         // haven't already anticipated, it must never take down the whole popup.
         try {
-            await refineWithAI(tabs, unresolvedTabs, categoryByTabId);
+            await refineWithAI(tabs, unresolvedTabs, categoryByTabId, initId);
         } catch (err) {
             console.warn("ClaroTab: AI refinement step failed unexpectedly:", err);
         }
     } catch (err) {
+        if (initId !== currentInitId) return;
         console.error("ClaroTab: failed to load tabs:", err);
         renderErrorState();
     } finally {
-        await minPulseDuration;
-        brandMark.classList.remove("loading");
-        isInitializing = false;
-        if (pendingInit) {
-            pendingInit = false;
-            init();
+        if (initId === currentInitId) {
+            await minPulseDuration;
+            brandMark.classList.remove("loading");
         }
     }
 }
@@ -163,13 +160,15 @@ function buildGroupsFromCategoryMap(tabs, categoryByTabId) {
 // FULL updated category map -- not a fresh rules-only pass -- so tabs that
 // were already resolved (by rules or cache) can never regress back to
 // "Other" on this second render.
-async function refineWithAI(tabs, unresolvedTabs, categoryByTabId) {
+async function refineWithAI(tabs, unresolvedTabs, categoryByTabId, initId) {
     if (unresolvedTabs.length === 0) {
-        hideAiBanner(); // everything was already resolved by rules/cache -- no AI work needed at all
+        if (initId === currentInitId) hideAiBanner();
         return;
     }
 
     const apiKey = await getApiKey();
+    if (initId !== currentInitId) return;
+
     if (!apiKey) {
         showAiBanner("info", `Enable AI in Settings to categorize ${unresolvedTabs.length} more tab${unresolvedTabs.length === 1 ? "" : "s"}.`, {
             actionLabel: "Open Settings",
@@ -181,6 +180,7 @@ async function refineWithAI(tabs, unresolvedTabs, categoryByTabId) {
     showAiBanner("info", `Refining ${unresolvedTabs.length} tab${unresolvedTabs.length === 1 ? "" : "s"} with AI…`);
 
     const { categories: aiResults, error } = await categorizeTabsWithGemini(unresolvedTabs, apiKey);
+    if (initId !== currentInitId) return;
 
     const updatedCategories = { ...categoryByTabId };
     const newCacheEntries = {};
@@ -208,6 +208,8 @@ async function refineWithAI(tabs, unresolvedTabs, categoryByTabId) {
     if (Object.keys(newCacheEntries).length > 0) {
         await setCachedCategories(newCacheEntries);
     }
+
+    if (initId !== currentInitId) return;
 
     // Surface a specific, actionable message instead of failing silently.
     if (error) {
