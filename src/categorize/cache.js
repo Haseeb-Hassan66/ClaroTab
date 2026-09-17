@@ -5,6 +5,7 @@
 
 const CACHE_KEY = "gemini_category_cache";
 const TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days -- categories rarely change that fast
+const MAX_CACHE_ENTRIES = 500;
 
 async function loadCache() {
     const result = await chrome.storage.local.get(CACHE_KEY);
@@ -48,14 +49,36 @@ export async function getCachedCategoriesMap() {
 }
 
 /**
- * Stores multiple { url: category } results in one write.
+ * Stores multiple { url: category } results in one write, evicting expired
+ * entries and capping total cache size to prevent storage quota exhaustion.
  * @param {Record<string, string>} entries
  */
 export async function setCachedCategories(entries) {
     const cache = await loadCache();
     const now = Date.now();
+
     for (const [url, category] of Object.entries(entries)) {
         cache[url] = { category, timestamp: now };
     }
-    await saveCache(cache);
+
+    // Evict expired entries older than TTL
+    const validEntries = Object.entries(cache).filter(
+        ([, entry]) => entry && now - entry.timestamp <= TTL_MS
+    );
+
+    // Evict oldest entries if total cache exceeds MAX_CACHE_ENTRIES
+    if (validEntries.length > MAX_CACHE_ENTRIES) {
+        validEntries.sort((a, b) => b[1].timestamp - a[1].timestamp);
+        validEntries.length = MAX_CACHE_ENTRIES;
+    }
+
+    const prunedCache = Object.fromEntries(validEntries);
+    await saveCache(prunedCache);
 }
+
+/**
+ * Clears all cached categories from storage.
+ */
+export async function clearCache() {
+    await chrome.storage.local.remove(CACHE_KEY);
+}
