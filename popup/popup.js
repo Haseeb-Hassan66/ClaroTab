@@ -529,8 +529,10 @@ function showConfirm(title, message, options = {}) {
             if (e.target === overlay) cleanup(false); // clicking the dimmed backdrop cancels
         };
         const onKeydown = (e) => {
-            if (e.key === "Escape") cleanup(false);
-            if (e.key === "Enter") cleanup(true);
+            if (e.key === "Escape") {
+                e.preventDefault();
+                cleanup(false);
+            }
         };
 
         confirmBtn.addEventListener("click", onConfirm);
