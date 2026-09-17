@@ -5,10 +5,13 @@
 import { getRestoreMode, RESTORE_MODES } from "../settings/preferences.js";
 
 const SESSIONS_KEY = "clarotab_sessions";
+export const MAX_SESSIONS = 50;
+export const MAX_TABS_PER_SESSION = 500;
 
 async function loadSessions() {
     const result = await chrome.storage.local.get(SESSIONS_KEY);
-    return result[SESSIONS_KEY] || [];
+    const list = result[SESSIONS_KEY];
+    return Array.isArray(list) ? list : [];
 }
 
 async function saveSessionsList(sessions) {
@@ -37,15 +40,21 @@ export async function saveSession(name, tabs) {
         name: name.trim() || `Session -- ${new Date().toLocaleDateString()}`,
         createdAt: Date.now(),
         // Only keep the fields we actually need to restore later --
-        // no point storing the entire chrome.tabs.Tab object.
-        tabs: tabs.map((tab) => ({
-            url: tab.url,
-            title: tab.title,
-            favIconUrl: tab.favIconUrl,
+        // strip favIconUrl (often massive base64 data-URLs) to prevent quota overflow.
+        tabs: (tabs || []).slice(0, MAX_TABS_PER_SESSION).map((tab) => ({
+            url: tab.url || "",
+            title: tab.title || tab.url || "Untitled Tab",
         })),
     };
 
     sessions.push(session);
+
+    // Evict oldest sessions if count exceeds MAX_SESSIONS
+    if (sessions.length > MAX_SESSIONS) {
+        sessions.sort((a, b) => b.createdAt - a.createdAt);
+        sessions.length = MAX_SESSIONS;
+    }
+
     await saveSessionsList(sessions);
     return session;
 }
@@ -65,7 +74,7 @@ export async function deleteSession(sessionId) {
  * @param {object} session
  */
 export async function restoreSession(session) {
-    const urls = session.tabs.map((tab) => tab.url).filter(Boolean);
+    const urls = (session.tabs || []).map((tab) => tab.url).filter(Boolean);
     if (urls.length === 0) return;
 
     const mode = await getRestoreMode();
