@@ -26,6 +26,16 @@ export async function getSessions() {
     return sessions.slice().sort((a, b) => b.createdAt - a.createdAt);
 }
 
+function isSafeUrl(url) {
+    if (typeof url !== "string") return false;
+    try {
+        const parsed = new URL(url);
+        return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+        return false;
+    }
+}
+
 /**
  * Saves the given tabs as a new named session.
  * @param {string} name
@@ -40,11 +50,15 @@ export async function saveSession(name, tabs) {
         name: name.trim() || `Session -- ${new Date().toLocaleDateString()}`,
         createdAt: Date.now(),
         // Only keep the fields we actually need to restore later --
-        // strip favIconUrl (often massive base64 data-URLs) to prevent quota overflow.
-        tabs: (tabs || []).slice(0, MAX_TABS_PER_SESSION).map((tab) => ({
-            url: tab.url || "",
-            title: tab.title || tab.url || "Untitled Tab",
-        })),
+        // strip favIconUrl (often massive base64 data-URLs) to prevent quota overflow,
+        // and filter out non-web URLs (javascript:, chrome://, etc.).
+        tabs: (tabs || [])
+            .filter((tab) => isSafeUrl(tab.url))
+            .slice(0, MAX_TABS_PER_SESSION)
+            .map((tab) => ({
+                url: tab.url,
+                title: tab.title || tab.url || "Untitled Tab",
+            })),
     };
 
     sessions.push(session);
@@ -74,7 +88,7 @@ export async function deleteSession(sessionId) {
  * @param {object} session
  */
 export async function restoreSession(session) {
-    const urls = (session.tabs || []).map((tab) => tab.url).filter(Boolean);
+    const urls = (session.tabs || []).map((tab) => tab.url).filter(isSafeUrl);
     if (urls.length === 0) return;
 
     const mode = await getRestoreMode();
