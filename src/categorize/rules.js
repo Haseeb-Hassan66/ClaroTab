@@ -128,6 +128,23 @@ const DOMAIN_RULES = [
 // 2. Keyword-based: scans the tab title for category-indicating words.
 const EDU_TLD_PATTERN = /\.(edu|ac\.[a-z]{2})$/;
 
+/**
+ * Returns true if `keyword` appears in `title`.
+ * Single-word keywords use \b word-boundary matching to prevent substring
+ * false positives (e.g. "cart" must not match "cartoon" or "cartridge").
+ * Multi-word phrases use plain includes() — they are specific enough already.
+ * @param {string} title  lowercase tab title
+ * @param {string} keyword  keyword or phrase to match
+ */
+function matchesKeyword(title, keyword) {
+    if (!keyword.includes(' ')) {
+        // Single word — require word boundaries so "cart" doesn't fire on "cartoon".
+        return new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(title);
+    }
+    // Multi-word phrase — substring match is fine.
+    return title.includes(keyword);
+}
+
 const KEYWORD_RULES = [
     { category: "Shopping", keywords: ["cart", "checkout", "your order", "add to bag", "buy now"] },
     { category: "Coding", keywords: ["documentation", "api reference", "pull request", "merge request", "stack trace", "error:"] },
@@ -167,7 +184,7 @@ export function categorizeTab(tab) {
     }
 
     for (const rule of KEYWORD_RULES) {
-        if (rule.keywords.some((keyword) => title.includes(keyword))) {
+        if (rule.keywords.some((keyword) => matchesKeyword(title, keyword))) {
             return rule.category;
         }
     }
