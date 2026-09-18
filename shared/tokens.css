@@ -1,0 +1,68 @@
+/*
+ * Design tokens — single source of truth for the ClaroTab design system.
+ * Linked by both popup.html and options.html so any change here
+ * propagates to both pages automatically.
+ */
+:root {
+  /* --- Base surfaces --- */
+  --bg: #0a0a12;
+  --surface: #15161f;
+
+  /* --- Text --- */
+  --ink: #f3f2f8;
+  --ink-soft: #a7a5c2;
+
+  /* --- Borders --- */
+  --border: rgba(255, 255, 255, 0.1);
+
+  /* --- Accent --- */
+  --accent: #8b7cff;
+  --accent-soft: rgba(139, 124, 255, 0.16);
+
+  /* --- Status colors (dark-tuned for contrast) --- */
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.14);
+  --warning: #fbbf24;
+  --warning-soft: rgba(251, 191, 36, 0.14);
+  --danger: #ff6b6b;
+  --danger-soft: rgba(255, 107, 107, 0.14);
+
+  --radius: 14px;
+
+  /* --- Glass panel system --- */
+  --glass-bg: rgba(255, 255, 255, 0.06);
+  --glass-bg-hover: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-blur: 20px;
+  --glass-shadow: 0 8px 32px rgba(20, 10, 60, 0.35);
+  --glass-radius: 16px;
+
+  /* --- Motion tokens --- */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --ease-ui: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* --- Category colors --- */
+  --cat-coding: #a78bfa;
+  --cat-shopping: #ff9f5a;
+  --cat-entertainment: #ff7aa8;
+  --cat-research: #34d399;
+  --cat-university: #fbbf24;
+  --cat-social-media: #60a5fa;
+  --cat-work-productivity: #4ade80;
+  --cat-email: #c7c5dd;
+  --cat-news: #d18ff0;
+  --cat-other: #8886a3;
+
+  /* --- Category icon colors (computed from relative luminance) --- */
+  --cat-coding-icon: white;
+  --cat-shopping-icon: #1b1626;
+  --cat-entertainment-icon: #1b1626;
+  --cat-research-icon: #1b1626;
+  --cat-university-icon: #1b1626;
+  --cat-social-media-icon: #1b1626;
+  --cat-work-productivity-icon: #1b1626;
+  --cat-email-icon: #1b1626;
+  --cat-news-icon: #1b1626;
+  --cat-other-icon: white;
+}
