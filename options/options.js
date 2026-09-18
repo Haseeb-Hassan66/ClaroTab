@@ -13,10 +13,23 @@ const feedback = document.getElementById("feedback");
 const modelList = document.getElementById("model-list");
 const refreshUsageBtn = document.getElementById("refresh-usage-btn");
 
+let hasExistingKey = false;
+
+function applyMaskedPlaceholder(key) {
+    if (key) {
+        const suffix = key.length > 4 ? key.slice(-4) : "";
+        input.placeholder = `••••••••••••${suffix}`;
+    } else {
+        input.placeholder = "Paste your API key here";
+    }
+}
+
 async function init() {
     const existingKey = await getApiKey();
-    input.value = existingKey;
-    updateStatusBadge(Boolean(existingKey));
+    hasExistingKey = Boolean(existingKey);
+    input.value = "";
+    applyMaskedPlaceholder(existingKey);
+    updateStatusBadge(hasExistingKey);
     await renderModelList();
     await renderRestoreModeOptions();
 }
@@ -41,6 +54,17 @@ saveBtn.addEventListener("click", async () => {
     const key = input.value.trim();
 
     if (!key) {
+        if (hasExistingKey) {
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Testing…";
+            showFeedback("Verifying your key with Google's API…", false);
+            const existing = await getApiKey();
+            const result = await testApiKey(existing);
+            showFeedback(result.message, !result.ok);
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save & Test";
+            return;
+        }
         showFeedback("Enter a key before saving.", true);
         return;
     }
@@ -59,6 +83,11 @@ saveBtn.addEventListener("click", async () => {
     }
 
     await setApiKey(key);
+    hasExistingKey = true;
+    applyMaskedPlaceholder(key);
+    input.value = "";
+    input.type = "password";
+    toggleVisibilityBtn.textContent = "Show";
     updateStatusBadge(true);
     showFeedback(result.message, false);
     saveBtn.disabled = false;
@@ -67,7 +96,11 @@ saveBtn.addEventListener("click", async () => {
 
 removeBtn.addEventListener("click", async () => {
     await clearApiKey();
+    hasExistingKey = false;
     input.value = "";
+    applyMaskedPlaceholder(null);
+    input.type = "password";
+    toggleVisibilityBtn.textContent = "Show";
     updateStatusBadge(false);
     showFeedback("API key removed. AI categorization is now off.", false);
 });
