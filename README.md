@@ -1,87 +1,104 @@
 <div align="center">
   <img src="icons/icon128.png" alt="ClaroTab Logo" width="100" height="100">
   <h1>ClaroTab</h1>
-  <p><strong>A smart, privacy-first Chrome extension that automatically categorizes, groups, cleans up, and restores browser tabs.</strong></p>
+  <p><strong>A smart, privacy-first Chrome extension that automatically categorizes, groups, cleans up, and restores your browser tabs — no server, no telemetry, no noise.</strong></p>
 
   [![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+  [![Version](https://img.shields.io/badge/Version-1.5.2-informational.svg)](manifest.json)
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
   [![Google Gemini API](https://img.shields.io/badge/AI-Google_Gemini_API-orange.svg)](https://aistudio.google.com/)
-  [![Privacy First](https://img.shields.io/badge/Privacy-100%25_Local-green.svg)](#privacy--security)
+  [![Privacy First](https://img.shields.io/badge/Privacy-100%25_Local-green.svg)](#-privacy--security)
 </div>
 
 ---
 
 ## 📌 Overview
 
-**ClaroTab** turns chaotic browser tab sprawl into organized, color-coded categories at a single click. Built with a high-performance, two-tiered architecture, it combines an **instant, zero-latency rule engine** (operating 100% offline with zero network calls) with an **optional AI fallback layer** powered by Google Gemini to intelligently classify complex or ambiguous pages.
+**ClaroTab** turns chaotic browser tab sprawl into organized, color-coded category groups at a single click. It is built on a **two-tiered architecture**: an instant, zero-latency rule engine that runs 100% locally with no network calls, backed by an optional **Google Gemini AI fallback** that intelligently classifies ambiguous pages the rule engine can't confidently place.
 
-Designed strictly around **privacy and zero friction**, ClaroTab operates without any external servers or telemetry. All settings, session snapshots, and category caches remain locked within your browser's local storage (`chrome.storage.local`).
+All settings, session snapshots, API keys, and AI result caches live exclusively in `chrome.storage.local` on your device. Nothing is ever transmitted to a custom server or third-party analytics platform.
 
 ---
 
 ## ✨ Key Features
 
-- ⚡ **Instant Rule-Based Categorization**: 
-  Categorizes tabs immediately upon opening the popup using domain and keyword matching rules. No network latency, no waiting.
-- 🤖 **Smart Gemini AI Fallback (Optional)**: 
-  Ambiguous tabs that fall into the *"Other"* category can optionally be classified by Google Gemini AI. Results are cached locally for 7 days by URL to minimize API calls.
-- 🔄 **Multi-Model Fallback Chain & Quota Resiliency**: 
-  Automatically cascades through Google's Gemini and Gemma models (`gemini-flash-latest`, `gemini-flash-lite-latest`, `gemma-4-31b-it`, `gemma-4-26b-a4b-it`) when facing rate limits (HTTP 429). Tracks real daily usage locally without relying on inaccurate quota estimates.
-- 🧹 **One-Click Duplicate Tab Cleaner**: 
-  Identifies duplicate tabs via intelligent URL normalization (stripping fragments and trailing slashes while preserving query parameters). Safely removes redundant tabs while preserving active or pinned tabs.
-- 💾 **Session Save & Restore**: 
-  Capture snapshots of open tab sets with custom names and restore them later—even across browser restarts. Choose between opening restored sessions in a fresh window or appending to the active window.
-- 🛡️ **100% Private & Zero Telemetry**: 
-  No intermediate backend server, no tracking scripts, no analytics. Your API key and browsing metadata never leave your local device except for direct, sanitized calls to Google Gemini API.
-- 🎨 **Modern Glassmorphic UI**: 
-  Features dark mode support, collapsible accordion groups, favicons, status banners, keyboard accessibility, and a dedicated options dashboard.
+| Feature | Details |
+|---|---|
+| ⚡ **Instant Rule Categorization** | Domain + keyword rules classify tabs in-memory at popup open time — zero network latency |
+| 🤖 **Gemini AI Fallback** | Unrecognized tabs are sent to Google Gemini for smart classification, cached locally for 7 days |
+| 🔀 **Multi-Model Fallback Chain** | Cascades through 4 models when hitting rate limits; tracks exhaustion per model per day |
+| 🧹 **Duplicate Tab Cleaner** | Detects and removes duplicates via intelligent URL normalization; preserves active/pinned tabs |
+| 💾 **Session Save & Restore** | Snapshots named sets of tabs; restores them into a new window or the current window |
+| 🔒 **No Server, No Telemetry** | Only outbound traffic is direct HTTPS calls to `generativelanguage.googleapis.com` (if AI is on) |
+| 🎨 **Modern Glassmorphic UI** | Dark mode, collapsible accordion groups, per-category color coding, and full keyboard navigation |
+| ♿ **Accessibility-first** | Focus-trapped modals, `aria-*` attributes, arrow + Tab key navigation throughout |
 
 ---
 
 ## 🏗️ Architecture & How It Works
 
-ClaroTab processes open tabs through a deterministic pipeline to ensure maximum performance and privacy:
+ClaroTab processes every open tab through a deterministic, ordered pipeline:
 
 ```text
-[ Open Tabs ]
-      │
-      ▼
-┌────────────────────────────────────────────────────────┐
-│ 1. Local Cache Lookup (chrome.storage.local)           │
-│    Reuses cached AI categories (7-day TTL)             │
-└─────────────────────────┬──────────────────────────────┘
-                          │
-                          ▼
-┌────────────────────────────────────────────────────────┐
-│ 2. High-Speed Local Rule Engine                        │
-│    • Domain Rules (e.g. mail.google.com -> Email)      │
-│    • TLD Patterns (e.g. .edu / .ac.uk -> University)   │
-│    • Title Keyword Rules (e.g. "checkout" -> Shopping) │
-└─────────────────────────┬──────────────────────────────┘
-                          │
-            Categorized?  ├─────── YES ───► [ Grouped Tab View ]
-                          │
-                         NO (Category: "Other")
-                          │
-                          ▼
-┌────────────────────────────────────────────────────────┐
-│ 3. Gemini AI Fallback (Optional, if API Key is set)    │
-│    • Sanitizes titles/URLs (max 200 chars, strips tags)│
-│    • Executes request via Multi-Model Fallback Chain    │
-│    • Caches result to local storage                    │
-└─────────────────────────┬──────────────────────────────┘
-                          │
-                          ▼
-                [ Grouped Tab View ]
+[ Open Normal-Window Tabs ]
+        │
+        ▼
+┌─────────────────────────────────────────────────────┐
+│ 0. Tab Filter (query.js)                            │
+│    • windowType: 'normal' only (excludes DevTools)  │
+│    • http / https URLs only                         │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────┐
+│ 1. Local AI Cache Lookup (cache.js)                 │
+│    • 7-day TTL per normalized URL                   │
+│    • Max 500 entries; oldest evicted on overflow    │
+│    • Hit → category applied immediately             │
+└──────────────────────┬──────────────────────────────┘
+                       │ Miss
+                       ▼
+┌─────────────────────────────────────────────────────┐
+│ 2. Rule Engine (rules.js)                           │
+│    • Domain rules  (e.g. mail.google.com → Email)   │
+│    • TLD patterns  (e.g. .edu / .ac.uk → University)│
+│    • Keyword rules (word-boundary regex for singles)│
+└──────────────────────┬──────────────────────────────┘
+                       │
+         Categorized?  ├──── YES ──► [ Grouped Tab View ]
+                       │
+                      NO  (lands in "Other")
+                       │
+                       ▼
+┌─────────────────────────────────────────────────────┐
+│ 3. Gemini AI Fallback (gemini.js)  [optional]       │
+│    • Only runs if an API key is saved               │
+│    • Sanitizes title/URL (max 200 chars, no quotes) │
+│    • Validates response IDs against submitted tabs  │
+│    • Multi-Model Fallback Chain (see below)         │
+│    • Caches result → Local AI Cache                 │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
+              [ Grouped Tab View ]
 ```
 
-### Multi-Model Fallback Engine
+### Multi-Model Fallback Chain
 
-Google imposes per-model daily quotas on free-tier Gemini keys. ClaroTab solves rate-limiting dynamically:
-1. **Priority Model**: Attempts the user's pinned model first.
-2. **Dynamic Failover**: If an HTTP 429 (Rate Limit) or 404 is encountered, ClaroTab automatically transitions to the next available model in the fallback chain:
-   $$\text{gemini-flash-latest} \longrightarrow \text{gemini-flash-lite-latest} \longrightarrow \text{gemma-4-31b-it} \longrightarrow \text{gemma-4-26b-a4b-it}$$
-3. **Local Exhaustion Tracking**: Tracks rate limits per model based on Pacific Time (matching Google's daily reset window) so exhausted models are skipped automatically.
+Google imposes separate per-day quotas on each model. ClaroTab resolves this by cascading:
+
+```
+Gemini Flash  →  Gemini Flash-Lite  →  Gemma 4 (31B)  →  Gemma 4 (26B)
+```
+
+- **Exhaustion tracking** per model per Pacific-time day (matching Google's quota reset window).
+- **Automatic skip** of any model already marked exhausted, with no user action required.
+- **5xx / transient errors** treated as soft failures — the next model in the chain is tried.
+- **Preferred model pin** — users can manually pin a model in Settings; automatic fallover still applies if that model is exhausted.
+
+### Concurrency Safety
+
+`init()` uses a **generation ID guard**: if the popup is reopened or AI refinement is triggered while a previous run is still in-flight, the stale run is silently discarded and the new one takes over — preventing race conditions and stale UI writes.
 
 ---
 
@@ -89,119 +106,163 @@ Google imposes per-model daily quotas on free-tier Gemini keys. ClaroTab solves 
 
 ```text
 ClaroTab/
-├── manifest.json              # Extension Configuration (Manifest V3)
-├── background.js              # Service worker for extension lifecycle
-├── icons/                     # Extension branding icons (16px, 48px, 128px)
-├── popup/                     # Main toolbar interface
-│   ├── popup.html             # Popup layout
-│   ├── popup.css              # Modern UI design system & tokens
-│   └── popup.js               # Tab query rendering, accordions, duplicate & session handlers
-├── options/                   # Extension settings page
-│   ├── options.html           # Settings layout
-│   ├── options.css            # Settings styling & ambient background mesh
-│   └── options.js             # API key validation, model preference, & usage dashboard
-└── src/                       # Core ES Modules logic
-    ├── categorize/            # Tab categorization engine
-    │   ├── rules.js           # Built-in domain & keyword rules (9 categories)
-    │   ├── gemini.js          # Gemini API integration & fallback execution
-    │   ├── models.js          # Model definitions & fallback chain configuration
-    │   ├── cache.js           # Local storage category cache (7-day TTL)
-    │   └── icons.js           # SVG icon definitions for categories
-    ├── tabs/                  # Tab query & cleanup
-    │   ├── query.js           # Chrome tab querying abstraction
-    │   └── duplicates.js      # URL normalization & duplicate cleanup logic
-    ├── sessions/              # Tab session persistence
-    │   └── storage.js         # Session snapshot creation, deletion, & restoration
-    └── settings/              # Settings & state managers
-        ├── apiKey.js          # API key storage manager (chrome.storage.local)
-        ├── modelUsage.js      # Per-day request counter & exhaustion tracker
-        └── preferences.js     # User preferences (e.g. Session restore mode)
+├── manifest.json              # Extension manifest (Manifest V3, v1.5.2)
+├── background.js              # Service worker — lifecycle & first-run defaults
+├── icons/                     # Branding icons (16 × 16, 48 × 48, 128 × 128)
+├── shared/
+│   └── tokens.css             # Shared CSS design token system (single source of truth)
+├── popup/
+│   ├── popup.html             # Main toolbar popup (lang="en", links tokens.css)
+│   ├── popup.css              # Popup layout & component styles
+│   └── popup.js               # Tab rendering, accordions, duplicate & session handlers
+├── options/
+│   ├── options.html           # Settings page (lang="en", links tokens.css)
+│   ├── options.css            # Settings layout & ambient mesh background
+│   └── options.js             # API key management, model picker, restore mode picker
+└── src/                       # Core ES Modules
+    ├── categorize/
+    │   ├── rules.js           # Domain rules, TLD patterns, word-boundary keyword rules
+    │   ├── gemini.js          # Gemini API calls, model fallback execution, response validation
+    │   ├── models.js          # Model fallback chain & display metadata (single source of truth)
+    │   ├── cache.js           # AI result cache (7-day TTL, 500-entry cap, clearCache export)
+    │   └── icons.js           # SVG icon definitions per category
+    ├── tabs/
+    │   ├── query.js           # Tab querying — normal windows only, http/https filter
+    │   └── duplicates.js      # URL normalization & duplicate detection/removal
+    ├── sessions/
+    │   └── storage.js         # Session CRUD — 50-session cap, 500-tab/session cap, URL validation
+    └── settings/
+        ├── apiKey.js          # API key read/write/clear (chrome.storage.local)
+        ├── modelUsage.js      # Per-model daily request counts & exhaustion flags
+        └── preferences.js     # User preferences (restore mode, future settings)
 ```
 
 ---
 
 ## 🚀 Installation
 
-ClaroTab is currently available as an unpacked extension for Chromium-based browsers.
+ClaroTab is available as an unpacked extension for any Chromium-based browser.
 
-### Step-by-Step Setup
+### Prerequisites
 
-1. **Clone the Repository**:
+- Google Chrome, Brave, Edge, or any Chromium browser ≥ version 88 (Manifest V3 support)
+- Git (for cloning)
+
+### Setup
+
+1. **Clone the repository**
    ```bash
    git clone https://github.com/Haseeb-Hassan66/ClaroTab.git
    ```
-2. **Open Extensions Page**:
-   Navigate to `chrome://extensions` (or `brave://extensions`, `edge://extensions` depending on your browser).
-3. **Enable Developer Mode**:
-   Toggle the **Developer mode** switch in the top-right corner.
-4. **Load Extension**:
-   Click **Load unpacked** and select the cloned `ClaroTab` project directory.
-5. **Pin ClaroTab**:
-   Click the extension puzzle piece in your browser toolbar and pin **ClaroTab** for easy access.
+
+2. **Open your browser's extensions page**
+   - Chrome → `chrome://extensions`
+   - Brave → `brave://extensions`
+   - Edge → `edge://extensions`
+
+3. **Enable Developer Mode** — toggle the switch in the top-right corner.
+
+4. **Load Unpacked** — click **Load unpacked** and select the cloned `ClaroTab/` directory.
+
+5. **Pin ClaroTab** — click the puzzle-piece icon in the toolbar and pin ClaroTab for one-click access.
+
+> **Note:** There is no build step. ClaroTab runs native ES Modules directly in Chromium — no transpilation, no bundler required.
 
 ---
 
 ## ⚙️ Enabling AI Refinement (Optional)
 
-ClaroTab works fully out of the box using rule-based categorization. To enable AI categorization for unrecognized tabs:
+ClaroTab works fully out of the box with rule-based categorization. AI is strictly optional:
 
-1. Click the **Gear Icon ⚙️** in the top-right of the ClaroTab popup to open **Settings**.
-2. Get a free Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-3. Enter your API key in the **Gemini API key** field and click **Save & Test**.
-4. ClaroTab will execute a lightweight test request to verify the key before saving it locally.
+1. Click the **⚙️ Gear** icon in the top-right of the popup to open **Settings**.
+2. Get a **free** Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+3. Paste your key into the **Gemini API key** field and click **Save & Test** — ClaroTab runs a lightweight validation call before saving.
+4. The key is stored **locally only** in `chrome.storage.local`. It is sent exclusively to `generativelanguage.googleapis.com` via the `x-goog-api-key` request header (never in URL query strings).
 
-> 💡 **Note**: If AI refinement is disabled or your key runs out of quota, unrecognized tabs are safely placed under the **"Other"** group. The core extension never breaks.
+> **Tip:** If AI is off, or your key runs out of quota, unrecognized tabs fall gracefully into the **"Other"** group. The extension never errors or breaks — AI is purely additive.
+
+> **Removing the key** also clears the AI category cache automatically, so stale AI results don't linger after AI is turned off.
 
 ---
 
 ## 🏷️ Supported Categories
 
-ClaroTab organizes open tabs into 9 default categories:
+ClaroTab organizes tabs into **9 built-in categories** determined by a priority-ordered rule set:
 
-| Category | Typical Domains / Patterns |
-| :--- | :--- |
-| **Email** | `mail.google.com`, `outlook.live.com`, `mail.yahoo.com`, `proton.me` |
-| **Work & Productivity** | Google Docs/Sheets/Slides, `slack.com`, `notion.so`, `trello.com`, `figma.com`, `atlassian.net`, `zoom.us` |
-| **Coding** | `github.com`, `gitlab.com`, `stackoverflow.com`, `developer.mozilla.org`, `npmjs.com`, `leetcode.com`, `pypi.org` |
-| **Shopping** | `amazon.com`, `ebay.com`, `etsy.com`, `walmart.com`, `target.com`, `shopify.com`, checkout keywords |
+| Category | Typical Domains & Patterns |
+|:---|:---|
+| **Email** | `mail.google.com`, `outlook.live.com`, `mail.yahoo.com`, `protonmail.com` |
+| **Work & Productivity** | Google Docs/Sheets/Slides/Drive/Calendar, `slack.com`, `notion.so`, `trello.com`, `figma.com`, `zoom.us`, `atlassian.net` |
+| **Coding** | `github.com`, `gitlab.com`, `stackoverflow.com`, `developer.mozilla.org`, `npmjs.com`, `leetcode.com`, `react.dev`, `docker.com` |
+| **Shopping** | `amazon.com`, `ebay.com`, `etsy.com`, `walmart.com`; keywords: `cart`, `checkout`, `buy now` |
 | **Social Media** | `x.com`, `twitter.com`, `instagram.com`, `reddit.com`, `linkedin.com`, `discord.com`, `tiktok.com` |
 | **Entertainment** | `youtube.com`, `netflix.com`, `twitch.tv`, `spotify.com`, `hulu.com`, `disneyplus.com`, `steampowered.com` |
 | **Research** | `wikipedia.org`, `scholar.google.com`, `arxiv.org`, `jstor.org`, `sciencedirect.com`, `ieee.org` |
-| **University** | Educational TLDs (`.edu`, `.ac.uk`), `coursera.org`, `canvas.instructure.com`, `blackboard.com`, `quizlet.com` |
-| **News** | `bbc.com`, `cnn.com`, `nytimes.com`, `theguardian.com`, `reuters.com`, `bloomberg.com` |
-| **Other** | Any tab not matched by rules (subject to Gemini AI fallback if enabled) |
+| **University** | `.edu` / `.ac.xx` TLDs, `coursera.org`, `canvas.instructure.com`, `blackboard.com`, `quizlet.com` |
+| **News** | `bbc.com`, `cnn.com`, `nytimes.com`, `theguardian.com`, `reuters.com`, `bloomberg.com`, `dawn.com` |
+| **Other** | Any tab not matched by the above — eligible for Gemini AI fallback if a key is configured |
+
+**Rule priority order:** Domain rules → TLD patterns → Keyword rules → AI fallback → "Other"
+
+Keyword rules use **word-boundary regex** for single-word keywords (e.g. `"cart"` won't fire on `"cartoon"`). Multi-word phrases use plain substring matching.
 
 ---
 
 ## 🔒 Privacy & Security
 
-ClaroTab was designed from the ground up to respect user privacy:
+ClaroTab was designed from the ground up around a **zero-trust, local-first** model:
 
-- **Local Storage Only**: Your API key and preferences are stored exclusively in `chrome.storage.local` on your device. They are **never** uploaded to `chrome.storage.sync` or external servers.
-- **Sanitized Prompts**: When AI refinement is active, tab titles and URLs are truncated (max 200 characters) and stripped of quotes/newlines before being passed to Google Gemini API to guard against prompt injection.
-- **No Analytics / Telemetry**: No tracking codes, telemetry, or analytics scripts are included.
-- **No Custom Server**: ClaroTab has no backend infrastructure. Data stays strictly between your browser and (if AI is enabled) Google's Gemini API endpoints.
+| Concern | How ClaroTab handles it |
+|:---|:---|
+| **API Key storage** | Stored in `chrome.storage.local` only — never `sync`, never a custom server |
+| **API Key transmission** | Sent via `x-goog-api-key` HTTP header only — never appended to URL query strings |
+| **API Key display** | Masked with `••••••••••••[last 4]` in Settings — the raw key is never re-loaded into an input value |
+| **AI prompt content** | Tab titles/URLs truncated to 200 chars and stripped of quotes/newlines before sending to Gemini |
+| **AI response validation** | Gemini's returned tab IDs are validated against the exact set of tabs submitted — hallucinated IDs are rejected |
+| **Session URL restoration** | Only `http://` and `https://` URLs are restored — `javascript:`, `chrome://`, and similar schemes are blocked |
+| **No telemetry** | Zero analytics scripts, tracking pixels, or third-party SDKs |
+| **No custom backend** | No intermediate server exists — the only outbound call is directly to `generativelanguage.googleapis.com` |
+| **Permissions** | Requests only `tabs`, `tabGroups`, and `storage` — no `history`, no `cookies`, no broad host access |
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Extension Framework**: Vanilla JavaScript (ES Modules, Manifest V3 Chrome Extension APIs).
-- **Styling**: Modern CSS3 utilizing CSS variables/tokens, Flexbox/Grid layouts, glassmorphism, and responsive media queries (No heavy CSS frameworks).
-- **AI Integration**: Direct HTTP REST calls to Google Gemini REST API endpoints.
-- **Build System**: None! Pure native web modules running directly in Chromium engines without transpilation overhead.
+| Layer | Technology |
+|:---|:---|
+| **Platform** | Chrome Extension Manifest V3 |
+| **Language** | Vanilla JavaScript (ES Modules, no transpiler) |
+| **Styling** | Vanilla CSS3 — CSS custom properties, Flexbox/Grid, glassmorphism, `@keyframes` animations |
+| **Design tokens** | `shared/tokens.css` — single source of truth linked by both popup and options pages |
+| **AI** | Google Gemini REST API (direct HTTPS, `x-goog-api-key` header auth) |
+| **Storage** | `chrome.storage.local` exclusively |
+| **Build system** | None — runs directly in Chromium's native module runtime |
 
 ---
 
 ## 🤝 Contributing
 
-Contributions, feature requests, and domain rule updates are welcome!
+Contributions are welcome — whether that's new domain rules, bug fixes, or feature ideas.
 
-1. **Fork the repository**
-2. **Create your feature branch**: `git checkout -b feature/amazing-feature`
-3. **Commit your changes**: `git commit -m 'Add some amazing feature'`
-4. **Push to the branch**: `git push origin feature/amazing-feature`
-5. **Open a Pull Request**
+### Getting Started
+
+1. **Fork** the repository on GitHub.
+2. **Create a branch**: `git checkout -b feature/your-feature-name`
+3. **Make your changes** and commit: `git commit -m "Add your feature"`
+4. **Push**: `git push origin feature/your-feature-name`
+5. **Open a Pull Request** — describe what you changed and why.
+
+### Good First Contributions
+
+- **Adding domain rules** — edit `src/categorize/rules.js` and add entries to `DOMAIN_RULES` or `KEYWORD_RULES`.
+- **Adding a new category** — add a domain rule entry and a corresponding color token in `shared/tokens.css`.
+- **Reporting bugs** — open a GitHub Issue with steps to reproduce and your Chrome version.
+
+### Code Style
+
+- Pure ES Modules — no CommonJS `require()`.
+- No external npm dependencies — keep the extension dependency-free.
+- Keep all Chrome API calls in dedicated modules (`query.js`, `storage.js`, etc.) — never call `chrome.*` directly from UI files.
 
 ---
 
