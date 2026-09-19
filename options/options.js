@@ -3,6 +3,7 @@ import { testApiKey, getOrderedModels } from "../src/categorize/gemini.js";
 import { MODEL_FALLBACK_CHAIN, MODEL_META } from "../src/categorize/models.js";
 import { getUsageMap, getPreferredModel, setPreferredModel } from "../src/settings/modelUsage.js";
 import { getRestoreMode, setRestoreMode, RESTORE_MODES } from "../src/settings/preferences.js";
+import { clearCache } from "../src/categorize/cache.js";
 
 const input = document.getElementById("api-key-input");
 const toggleVisibilityBtn = document.getElementById("toggle-visibility-btn");
@@ -95,7 +96,11 @@ saveBtn.addEventListener("click", async () => {
 });
 
 removeBtn.addEventListener("click", async () => {
-    await clearApiKey();
+    // Clear the key and the AI category cache together.
+    // The cache must be wiped so stale AI-classified results don't persist
+    // into the next popup open when AI categorization is supposed to be off.
+    // This is especially important if the key was removed due to a compromise.
+    await Promise.all([clearApiKey(), clearCache()]);
     hasExistingKey = false;
     input.value = "";
     applyMaskedPlaceholder(null);
