@@ -109,10 +109,10 @@ header {
   width: 13px;
   height: 13px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #beabff 0%, #8b7cff 45%, #4433a8 100%);
+  background: linear-gradient(135deg, #fed7aa 0%, #f97316 45%, #9a3412 100%);
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
-    0 0 8px rgba(139, 124, 255, 0.55);
+    0 0 8px rgba(249, 115, 22, 0.55);
   flex-shrink: 0;
 }
 
@@ -202,7 +202,7 @@ h1 {
 
 #ai-banner.variant-info {
   background: var(--accent-soft);
-  border-color: rgba(139, 124, 255, 0.35);
+  border-color: rgba(249, 115, 22, 0.35);
   color: var(--accent);
 }
 
@@ -276,7 +276,7 @@ h1 {
   background: var(--accent-soft);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid rgba(139, 124, 255, 0.28);
+  border: 1px solid rgba(249, 115, 22, 0.28);
   border-radius: var(--glass-radius);
   cursor: pointer;
   text-align: left;
@@ -285,8 +285,8 @@ h1 {
 }
 
 #close-duplicates-btn:hover {
-  background: rgba(139, 124, 255, 0.22);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 16px rgba(139, 124, 255, 0.25);
+  background: rgba(249, 115, 22, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 4px 16px rgba(249, 115, 22, 0.25);
 }
 
 #close-duplicates-btn:active {
@@ -402,7 +402,7 @@ h1 {
 
 .group:hover {
   transform: translateY(-4px);
-  box-shadow: 0 18px 48px rgba(20, 10, 60, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  box-shadow: 0 18px 48px rgba(40, 15, 2, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 .group-header {
@@ -610,13 +610,13 @@ h1 {
   font-size: 12.5px;
   font-weight: 650;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 10px rgba(139, 124, 255, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 2px 10px rgba(249, 115, 22, 0.3);
   transition: filter 0.15s var(--ease-ui), box-shadow 0.15s var(--ease-ui);
 }
 
 #save-session-btn:hover {
   filter: brightness(1.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 16px rgba(139, 124, 255, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 16px rgba(249, 115, 22, 0.45);
 }
 
 #save-session-btn:disabled {
@@ -652,7 +652,7 @@ h1 {
 .session-item:hover {
   background: var(--glass-bg-hover);
   transform: translateY(-4px);
-  box-shadow: 0 18px 48px rgba(20, 10, 60, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  box-shadow: 0 18px 48px rgba(40, 15, 2, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 .session-item:active {
@@ -685,9 +685,9 @@ h1 {
 
 .session-btn {
   padding: 5px 9px;
-  background: rgba(139, 124, 255, 0.22);
+  background: rgba(249, 115, 22, 0.22);
   color: var(--accent);
-  border: 1px solid rgba(139, 124, 255, 0.3);
+  border: 1px solid rgba(249, 115, 22, 0.3);
   border-radius: 6px;
   font-size: 11px;
   font-weight: 650;
@@ -697,7 +697,7 @@ h1 {
 }
 
 .session-btn:hover {
-  background: rgba(139, 124, 255, 0.34);
+  background: rgba(249, 115, 22, 0.34);
 }
 
 .session-btn-delete {
