@@ -12,7 +12,17 @@
   <header>
     <div class="header-row">
       <div class="brand">
-        <span class="brand-mark" aria-hidden="true"></span>
+        <svg class="brand-mark" aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="20" height="20" rx="5" fill="url(#bm-grad)"/>
+          <path d="M13.5 7.2A4 4 0 1 0 13.5 12.8" stroke="white" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+          <defs>
+            <linearGradient id="bm-grad" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#fed7aa"/>
+              <stop offset="50%" stop-color="#f97316"/>
+              <stop offset="100%" stop-color="#9a3412"/>
+            </linearGradient>
+          </defs>
+        </svg>
         <h1>ClaroTab</h1>
       </div>
       <button id="settings-btn" title="Settings" aria-label="Open ClaroTab settings"></button>
