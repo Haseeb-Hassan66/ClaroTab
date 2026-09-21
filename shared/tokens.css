@@ -5,19 +5,19 @@
  */
 :root {
   /* --- Base surfaces --- */
-  --bg: #0a0a12;
-  --surface: #15161f;
+  --bg: #0f0a04;
+  --surface: #1a1108;
 
   /* --- Text --- */
-  --ink: #f3f2f8;
-  --ink-soft: #a7a5c2;
+  --ink: #fdf6ee;
+  --ink-soft: #a89070;
 
   /* --- Borders --- */
   --border: rgba(255, 255, 255, 0.1);
 
   /* --- Accent --- */
-  --accent: #8b7cff;
-  --accent-soft: rgba(139, 124, 255, 0.16);
+  --accent: #f97316;
+  --accent-soft: rgba(249, 115, 22, 0.15);
 
   /* --- Status colors (dark-tuned for contrast) --- */
   --success: #34d399;
@@ -34,7 +34,7 @@
   --glass-bg-hover: rgba(255, 255, 255, 0.09);
   --glass-border: rgba(255, 255, 255, 0.14);
   --glass-blur: 20px;
-  --glass-shadow: 0 8px 32px rgba(20, 10, 60, 0.35);
+  --glass-shadow: 0 8px 32px rgba(40, 15, 2, 0.40);
   --glass-radius: 16px;
 
   /* --- Motion tokens --- */
