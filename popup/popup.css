@@ -383,6 +383,18 @@ h1 {
 /* FIX: was defined twice -- glass card + animation were separate blocks,
    causing the animation declaration to override nothing but waste specificity.
    Merged into one canonical definition. */
+/* Category color mappings */
+.group[data-cat="coding"]            { --cat-color: var(--cat-coding); }
+.group[data-cat="shopping"]          { --cat-color: var(--cat-shopping); }
+.group[data-cat="entertainment"]     { --cat-color: var(--cat-entertainment); }
+.group[data-cat="research"]          { --cat-color: var(--cat-research); }
+.group[data-cat="university"]        { --cat-color: var(--cat-university); }
+.group[data-cat="social-media"]      { --cat-color: var(--cat-social-media); }
+.group[data-cat="work-productivity"] { --cat-color: var(--cat-work-productivity); }
+.group[data-cat="email"]             { --cat-color: var(--cat-email); }
+.group[data-cat="news"]              { --cat-color: var(--cat-news); }
+.group[data-cat="other"]             { --cat-color: var(--cat-other); }
+
 .group {
   margin-bottom: 8px;
   border-radius: var(--glass-radius);
@@ -392,28 +404,40 @@ h1 {
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
   animation: rise-in 0.24s var(--ease-out) both;
 }
 
+/* Category-colored group cards — colored border + tinted glass fill */
+.group[data-cat] {
+  border-color: color-mix(in srgb, var(--cat-color, var(--accent)) 42%, var(--glass-border));
+  background: color-mix(in srgb, var(--cat-color, var(--accent)) 10%, var(--glass-bg));
+}
+
 .group:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 48px rgba(40, 15, 2, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(40, 15, 2, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+}
+
+.group[data-cat]:hover {
+  border-color: color-mix(in srgb, var(--cat-color, var(--accent)) 75%, var(--glass-border));
+  box-shadow:
+    0 14px 36px color-mix(in srgb, var(--cat-color, var(--accent)) 20%, rgba(40, 15, 2, 0.45)),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .group-header {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 7px 6px;
+  gap: 10px;
+  padding: 8px 10px;
   cursor: pointer;
-  border-radius: 10px;
   user-select: none;
   transition: background 0.15s var(--ease-ui), transform 0.1s var(--ease-ui);
 }
 
 .group-header:hover {
-  background: var(--glass-bg-hover);
+  background: color-mix(in srgb, var(--cat-color, var(--accent)) 12%, rgba(255, 255, 255, 0.06));
 }
 
 .group-header:active {
@@ -422,7 +446,11 @@ h1 {
 
 .group-header:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline-offset: -2px;
+}
+
+.group:not(.collapsed) .group-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--cat-color, var(--accent)) 20%, var(--glass-border));
 }
 
 .cat-badge {
@@ -452,17 +480,17 @@ h1 {
 
 .group-count {
   font-size: 11px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  background: var(--bg);
-  border: 1px solid var(--border);
+  font-weight: 650;
+  color: var(--cat-color, var(--ink-soft));
+  background: color-mix(in srgb, var(--cat-color, var(--accent)) 16%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--cat-color, var(--accent)) 30%, var(--border));
   padding: 1px 7px;
   border-radius: 10px;
 }
 
 .chevron {
   display: inline-flex;
-  color: var(--ink-soft);
+  color: var(--cat-color, var(--ink-soft));
   transition: transform 0.24s var(--ease-out);
   flex-shrink: 0;
 }

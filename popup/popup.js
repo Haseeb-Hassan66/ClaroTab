@@ -333,9 +333,11 @@ function buildGroupElement(category, tabs) {
 
     const group = document.createElement("div");
     group.className = "group collapsed";
+    group.dataset.cat = slug;
 
     const header = document.createElement("div");
     header.className = "group-header";
+    header.dataset.cat = slug;
     header.tabIndex = 0;
     header.setAttribute("role", "button");
     header.setAttribute("aria-expanded", "false");
