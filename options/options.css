@@ -12,9 +12,9 @@ body {
     margin: 0;
     min-height: 100vh;
     background:
-        radial-gradient(ellipse 120% 60% at 5% 0%, rgba(99, 91, 255, 0.5), transparent 55%),
-        radial-gradient(ellipse 100% 80% at 100% 100%, rgba(158, 145, 235, 0.38), transparent 55%),
-        radial-gradient(ellipse 80% 60% at 95% 5%, rgba(70, 60, 200, 0.28), transparent 55%),
+        radial-gradient(ellipse 120% 60% at 5% 0%, rgba(249, 115, 22, 0.42), transparent 55%),
+        radial-gradient(ellipse 100% 80% at 100% 100%, rgba(234, 88, 12, 0.28), transparent 55%),
+        radial-gradient(ellipse 80% 60% at 95% 5%, rgba(180, 60, 10, 0.20), transparent 55%),
         var(--bg);
     background-attachment: fixed;
     color: var(--ink);
@@ -31,7 +31,7 @@ body::before {
     width: 70%;
     height: 70%;
     border-radius: 50%;
-    background: radial-gradient(ellipse, rgba(120, 100, 255, 0.15), transparent 70%);
+    background: radial-gradient(ellipse, rgba(249, 115, 22, 0.12), transparent 70%);
     will-change: transform;
     animation: blob-drift 22s var(--ease-ui) infinite alternate;
     pointer-events: none;
@@ -54,7 +54,7 @@ body::before {
     position: fixed;
     inset: 0;
     pointer-events: none;
-    background: radial-gradient(ellipse 70% 50% at 60% 55%, rgba(120, 100, 255, 0.12), transparent 65%);
+    background: radial-gradient(ellipse 70% 50% at 60% 55%, rgba(249, 115, 22, 0.09), transparent 65%);
     z-index: 0;
 }
 
