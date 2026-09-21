@@ -436,7 +436,8 @@ h1 {
   transition: background 0.15s var(--ease-ui), transform 0.1s var(--ease-ui);
 }
 
-.group-header:hover {
+.group-header:hover,
+.group.collapsed:hover .group-header {
   background: color-mix(in srgb, var(--cat-color, var(--accent)) 12%, rgba(255, 255, 255, 0.06));
 }
 
@@ -507,21 +508,27 @@ h1 {
 .group-body {
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows 0.28s var(--ease-out);
+  transition: grid-template-rows 0.28s var(--ease-out), visibility 0.28s;
+  overflow: hidden;
 }
 
 .group.collapsed .group-body {
   grid-template-rows: 0fr;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .group-body>.tab-list {
   min-height: 0;
   overflow: hidden;
-  transition: opacity 0.18s var(--ease-ui);
+  transition: opacity 0.18s var(--ease-ui), padding 0.28s var(--ease-out);
 }
 
 .group.collapsed .group-body>.tab-list {
   opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  pointer-events: none;
 }
 
 .tab-list {
