@@ -64,7 +64,7 @@ header {
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border-bottom: 1px solid var(--glass-border);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 24px rgba(40, 15, 2, 0.45);
   /* position/z-index inherited from body > * rule */
 }
 

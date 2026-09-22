@@ -30,10 +30,10 @@
   --radius: 14px;
 
   /* --- Glass panel system --- */
-  --glass-bg: rgba(255, 255, 255, 0.06);
-  --glass-bg-hover: rgba(255, 255, 255, 0.09);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-blur: 20px;
+  --glass-bg: rgba(255, 255, 255, 0.10);
+  --glass-bg-hover: rgba(255, 255, 255, 0.15);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --glass-blur: 24px;
   --glass-shadow: 0 8px 32px rgba(40, 15, 2, 0.40);
   --glass-radius: 16px;
 
