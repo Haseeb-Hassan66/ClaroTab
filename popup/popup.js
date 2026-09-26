@@ -20,13 +20,6 @@ async function init() {
     const brandMark = document.querySelector(".brand-mark");
     brandMark.classList.add("loading");
 
-    // Real work here often finishes in just a few milliseconds (especially
-    // once AI results are cached), which is faster than the pulse animation
-    // can paint even a single visible frame. This guarantees the pulse is
-    // shown for at least half a second, so it's an indicator people can
-    // actually perceive rather than invisible most of the time.
-    const minPulseDuration = new Promise((resolve) => setTimeout(resolve, 500));
-
     try {
         const tabs = await getAllTabs();
         if (initId !== currentInitId) return;
@@ -61,7 +54,6 @@ async function init() {
         renderErrorState();
     } finally {
         if (initId === currentInitId) {
-            await minPulseDuration;
             brandMark.classList.remove("loading");
         }
     }
