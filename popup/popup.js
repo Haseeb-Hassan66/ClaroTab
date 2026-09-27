@@ -34,10 +34,6 @@ async function init() {
         const groups = buildGroupsFromCategoryMap(tabs, categoryByTabId);
         if (initId !== currentInitId) return;
 
-        console.log("Tabs found:", tabs);
-        console.log("Grouped (rules + cache):", groups);
-        console.log(`${unresolvedTabs.length} tab(s) genuinely need AI classification`);
-
         renderGroups(tabs.length, groups);
         renderDuplicateAction(tabs);
 

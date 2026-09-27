@@ -1,5 +1,8 @@
 /* Design tokens are defined in ../shared/tokens.css, linked before this file in popup.html. */
 
+* {
+  box-sizing: border-box;
+}
 
 body {
   width: 360px;
@@ -59,10 +62,6 @@ body::before {
 body>* {
   position: relative;
   z-index: 1;
-}
-
-* {
-  box-sizing: border-box;
 }
 
 button,
@@ -394,9 +393,6 @@ h1 {
   opacity: 0.5;
 }
 
-/* FIX: was defined twice -- glass card + animation were separate blocks,
-   causing the animation declaration to override nothing but waste specificity.
-   Merged into one canonical definition. */
 /* Category color mappings */
 .group[data-cat="coding"]            { --cat-color: var(--cat-coding); }
 .group[data-cat="shopping"]          { --cat-color: var(--cat-shopping); }
@@ -675,8 +671,6 @@ h1 {
   padding: 0 10px 12px;
 }
 
-/* FIX: was defined twice -- glass card + animation were separate blocks.
-   Merged into one canonical definition. */
 .session-item {
   display: flex;
   align-items: center;
@@ -768,7 +762,6 @@ h1 {
 .session-btn,
 #close-duplicates-btn,
 .modal-btn {
-  transform: scale(1);
   transition: filter 0.15s var(--ease-ui), transform 0.1s var(--ease-ui), background 0.15s var(--ease-ui), color 0.15s var(--ease-ui);
 }
 

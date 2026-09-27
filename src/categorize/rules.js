@@ -190,23 +190,4 @@ export function categorizeTab(tab) {
     }
 
     return DEFAULT_CATEGORY;
-}
-
-/**
- * Groups an array of tabs into a { categoryName: [tabs] } object.
- * @param {chrome.tabs.Tab[]} tabs
- * @returns {Record<string, chrome.tabs.Tab[]>}
- */
-export function groupTabsByCategory(tabs) {
-    const groups = {};
-
-    for (const tab of tabs) {
-        const category = categorizeTab(tab);
-        if (!groups[category]) {
-            groups[category] = [];
-        }
-        groups[category].push(tab);
-    }
-
-    return groups;
-}
+}
