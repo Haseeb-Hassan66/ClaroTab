@@ -138,8 +138,14 @@ const EDU_TLD_PATTERN = /\.(edu|ac\.[a-z]{2})$/;
  */
 function matchesKeyword(title, keyword) {
     if (!keyword.includes(' ')) {
-        // Single word — require word boundaries so "cart" doesn't fire on "cartoon".
-        return new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(title);
+        // Only enforce word boundary assertions where the keyword actually starts
+        // or ends with a word character. This prevents false positives like "cart"
+        // matching "cartoon", while allowing punctuation-ended keywords like
+        // "error:" to match "error: something".
+        const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const leadingBoundary = /^\w/.test(keyword) ? '\\b' : '';
+        const trailingBoundary = /\w$/.test(keyword) ? '\\b' : '';
+        return new RegExp(`${leadingBoundary}${escaped}${trailingBoundary}`).test(title);
     }
     // Multi-word phrase — substring match is fine.
     return title.includes(keyword);
