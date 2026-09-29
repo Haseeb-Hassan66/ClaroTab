@@ -16,10 +16,18 @@ export async function getAllTabs() {
     const tabs = await chrome.tabs.query({ currentWindow: true, windowType: 'normal' });
 
     // Secondary guard: strip any tabs with non-navigable URLs that slipped through.
+    // Supports tab.pendingUrl so in-flight / loading tabs aren't dropped.
     return tabs.filter(tab => {
+        const urlToTest = tab.url || tab.pendingUrl || '';
         try {
-            const { protocol } = new URL(tab.url ?? '');
-            return protocol === 'http:' || protocol === 'https:';
+            const { protocol } = new URL(urlToTest);
+            if (protocol === 'http:' || protocol === 'https:') {
+                if (!tab.url && tab.pendingUrl) {
+                    tab.url = tab.pendingUrl;
+                }
+                return true;
+            }
+            return false;
         } catch {
             return false;
         }
