@@ -239,8 +239,13 @@ ${tabList}`;
             if (result.ok) {
                 const filtered = {};
                 for (const [tabId, category] of Object.entries(result.categories || {})) {
-                    if (submittedTabIds.has(String(tabId)) && assignableCategories.includes(category)) {
-                        filtered[tabId] = category;
+                    if (!submittedTabIds.has(String(tabId))) continue;
+                    const normalized = typeof category === "string" ? category.trim().toLowerCase() : "";
+                    const matchedCategory = assignableCategories.find(
+                        (validCat) => validCat.toLowerCase() === normalized
+                    );
+                    if (matchedCategory) {
+                        filtered[tabId] = matchedCategory;
                     }
                 }
                 return { categories: filtered, error: null };
