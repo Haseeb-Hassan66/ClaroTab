@@ -429,6 +429,7 @@ function buildTabElement(tab) {
     const activate = () => {
         chrome.tabs.update(tab.id, { active: true });
         chrome.windows.update(tab.windowId, { focused: true });
+        window.close();
     };
     item.addEventListener("click", activate);
     item.addEventListener("keydown", (e) => {
